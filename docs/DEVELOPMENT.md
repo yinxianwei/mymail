@@ -109,3 +109,24 @@ Outlook or another production service. Historical investigation and validation
 notes remain in [技术选型与原型验收](技术选型与原型验收.md).
 
 开发端口冲突时，可使用 `MYMAIL_DEV_PORT=5186 bun run dev` 同步调整桌面加载地址与 Vite 端口。
+
+## On-device mail translation
+
+`bun run dev` and the native `buildCommand` compile the small Swift helper in
+`backend/native/translation-helper.swift`. This needs a macOS 15 SDK or newer;
+Linux web builds and Go tests do not require Swift. The generated helper bundles
+under `resources/darwin-arm64/` and `resources/darwin-amd64/` are ignored by Git
+and included by MyGo for the selected target. `bun run build:translation` builds
+them independently. MyGo signs the nested bundle with the app during packaging.
+
+The helper uses Apple's `TranslationSession` from a visible SwiftUI translation
+task, including system-managed language-download consent. Source and translated
+text travel through stdin/stdout only; neither is placed in process arguments,
+temporary text files or logs. The Go service reads cached messages, validates
+request identifiers, bounds input at 80,000 UTF-8 bytes and cancels the helper
+when a request is cancelled, times out or the app quits. No translation API key
+or cloud translation fallback is configured. Models remain managed by macOS.
+
+Regression tests mock the native translator; model download and real translation
+must also be tested on a physical Mac. A passing mock test does not establish
+that Apple's language models are installed or supported on another machine.

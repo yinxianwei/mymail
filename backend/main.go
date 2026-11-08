@@ -89,6 +89,7 @@ func main() {
 		log.Fatal("无法打开本地数据库")
 	}
 	defer service.db.Close()
+	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) { service.stopTranslations() })
 	mygo.App.SetLanguages("en", "zh-Hans")
 	service.systemLanguages = mygo.App.PreferredLanguages
 	service.changeLocale = func(preference string) {

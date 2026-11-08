@@ -13,12 +13,13 @@
   "type": "module",
   "description": "A lightweight, local-first desktop email client built with MyGo and React. Native WebView, unified inbox, and offline reading.",
   "scripts": {
-    "dev": "mygo dev",
+    "dev": "bun run build:translation && mygo dev",
     "build": "mygo build",
     "licenses": "bun scripts/collect-licenses.ts",
     "check:repo": "python3 scripts/check-repository.py",
     "generate": "mygo generate",
     "dev:web": "vite --host 127.0.0.1",
+    "build:translation": "bun scripts/build-translation.ts",
     "build:web": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "test": "go test ./... && bun test",
@@ -27,6 +28,7 @@
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.4.1",
     "@radix-ui/react-dialog": "^1.1.6",
+    "@radix-ui/react-dropdown-menu": "^2.2.1",
     "@radix-ui/react-select": "^2.4.1",
     "@radix-ui/react-slot": "^1.1.2",
     "@radix-ui/react-tabs": "^1.2.1",

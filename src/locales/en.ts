@@ -2,6 +2,43 @@ import { errors } from "./en-errors";
 /** English interface catalog. Keys are UI messages, never mail content. */
 export const en: Record<string, string> = {
   ...errors,
+  更多操作: "More actions",
+  原文: "Original",
+  发件人未信任: "Untrusted sender",
+  "可信发件人{0}": "Trusted sender{0}",
+  无法打开链接: "Unable to open the link.",
+  邮件翻译: "Mail translation",
+  翻译为中文: "Translate to Chinese",
+  "正在翻译…": "Translating…",
+  收起译文: "Hide translation",
+  显示译文: "Show translation",
+  "首次使用可能需要下载英中语言包，可在系统提示中确认。":
+    "The first translation may require English and Chinese language packs. Confirm in the system prompt.",
+  "翻译失败，请检查系统语言包后重试。":
+    "Translation failed. Check the system language packs and try again.",
+  中文译文: "Chinese translation",
+  翻译请求无效: "Invalid translation request.",
+  请先加载邮件正文再翻译: "Load the message body before translating.",
+  邮件没有可翻译的正文: "This message has no text to translate.",
+  邮件过长暂不支持整封翻译: "This message is too long to translate in full.",
+  "邮件过长，暂不支持整封翻译":
+    "This message is too long to translate in full.",
+  翻译已取消: "Translation cancelled.",
+  "翻译超时，请检查语言包后重试。":
+    "Translation timed out. Check the language packs and try again.",
+  "已有翻译正在进行，请稍候重试。":
+    "Another translation is running. Try again shortly.",
+  系统不支持英中翻译:
+    "English to Chinese translation is not supported by this system.",
+  "系统翻译失败，请检查语言包后重试。":
+    "System translation failed. Check the language packs and try again.",
+  "系统翻译返回不完整，请重试。":
+    "The system returned an incomplete translation. Try again.",
+  "系统翻译需要 macOS 15 或更高版本":
+    "System translation requires macOS 15 or later.",
+  无法检查系统翻译支持: "Could not check system translation support.",
+  "系统翻译组件不可用，请重新安装应用。":
+    "The system translation helper is unavailable. Reinstall the application.",
   "图片尺寸过大，请下载后查看。":
     "This image is too large to preview. Download to view it.",
   重试: "Retry",

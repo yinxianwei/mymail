@@ -43,3 +43,5 @@ coverage/
 /.codex/
 /resources/licenses/THIRD_PARTY_LICENSES.txt
 /release-assets/
+/resources/darwin-arm64/
+/resources/darwin-amd64/

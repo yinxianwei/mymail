@@ -157,6 +157,12 @@ export interface Snapshot {
   database: string;
 }
 
+export interface TranslationResult {
+  subject: string;
+  text: string;
+  html?: string;
+}
+
 // ---- Services ----
 
 export const MailService = {
@@ -172,6 +178,9 @@ export const MailService = {
   },
   cacheStats(): Promise<CacheStats> {
     return call("MailService.CacheStats");
+  },
+  cancelTranslation(requestID: string): Promise<void> {
+    return call("MailService.CancelTranslation", requestID);
   },
   checkMail(): Promise<DesktopState> {
     return call("MailService.CheckMail");
@@ -323,6 +332,14 @@ export const MailService = {
   },
   testNotification(): Promise<void> {
     return call("MailService.TestNotification");
+  },
+  /**
+   * TranslateMessage derives text exclusively from the cached mail. No body is
+   * supplied by JavaScript, written to temporary files, sent to a cloud service,
+   * or included in process arguments/logs. The result stays in the reader.
+   */
+  translateMessage(id: string, requestID: string): Promise<TranslationResult> {
+    return call("MailService.TranslateMessage", id, requestID);
   },
   /**
    * TrimCache is exposed to the preferences pane so the user can reclaim space

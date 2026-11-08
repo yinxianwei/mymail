@@ -161,27 +161,30 @@ type Snapshot struct {
 	Database string    `json:"database"`
 }
 type MailService struct {
-	db               *sql.DB
-	path             string
-	network          sync.Mutex
-	sending          sync.Mutex
-	monitorMu        sync.Mutex
-	desktopMu        sync.RWMutex
-	desktop          DesktopState
-	inboxes          map[string]InboxCheckpoint
-	checkRequests    chan struct{}
-	idleMu           sync.Mutex
-	idleStops        map[string]context.CancelFunc
-	settingsChanged  chan struct{}
-	flushMu          sync.Mutex
-	mailTarget       MailTarget
-	desktopChanged   func(DesktopState)
-	newMail          func(newMailNotice)
-	openMail         func()
-	composeMailto    func(Draft)
-	testNotification func(context.Context) error
-	systemLanguages  func() []string
-	changeLocale     func(string)
+	translationMu      sync.Mutex
+	translationCancels map[string]context.CancelFunc
+	translateText      func(context.Context, nativeTranslationRequest) (nativeTranslationResponse, error)
+	db                 *sql.DB
+	path               string
+	network            sync.Mutex
+	sending            sync.Mutex
+	monitorMu          sync.Mutex
+	desktopMu          sync.RWMutex
+	desktop            DesktopState
+	inboxes            map[string]InboxCheckpoint
+	checkRequests      chan struct{}
+	idleMu             sync.Mutex
+	idleStops          map[string]context.CancelFunc
+	settingsChanged    chan struct{}
+	flushMu            sync.Mutex
+	mailTarget         MailTarget
+	desktopChanged     func(DesktopState)
+	newMail            func(newMailNotice)
+	openMail           func()
+	composeMailto      func(Draft)
+	testNotification   func(context.Context) error
+	systemLanguages    func() []string
+	changeLocale       func(string)
 }
 
 func openService(path string) (*MailService, error) {

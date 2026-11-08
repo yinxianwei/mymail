@@ -1,3 +1,5 @@
+import { MenuItem } from "./components/ui/dropdown-menu";
+import { MessageTranslation } from "./components/message-translation";
 import {
   AttachmentPreview,
   type PreviewTarget,
@@ -759,7 +761,7 @@ export function App() {
       )
     : "unknown";
   const trustScope = message ? trustScopeOf(message.from) : "";
-  const trustNote = !remoteAllowed
+  const trustNote = !trustedSender
     ? ""
     : trust === "provider"
       ? t("常用邮箱服务商")
@@ -1286,7 +1288,28 @@ export function App() {
                       <header className="reader-card-header">
                         <div className="reader-sender">
                           <div className="reader-sender-row">
-                            <strong>{senderName(message.from)}</strong>
+                            <strong className="sender-name">
+                              <span
+                                className={
+                                  "sender-trust" +
+                                  (trustedSender ? " trusted" : "")
+                                }
+                                title={
+                                  trustedSender
+                                    ? t("可信发件人{0}", {
+                                        0: trustNote ? `（${trustNote}）` : "",
+                                      })
+                                    : t("发件人未信任")
+                                }
+                              >
+                                {trustedSender ? (
+                                  <ShieldCheck size={14} />
+                                ) : (
+                                  <ShieldAlert size={14} />
+                                )}
+                              </span>
+                              {senderName(message.from)}
+                            </strong>
                             <time>{dateTimeText(message.date)}</time>
                           </div>
                           <small className="reader-to">
@@ -1299,74 +1322,48 @@ export function App() {
                             </small>
                           )}
                         </div>
+                        <MessageTranslation
+                          key={message.id}
+                          messageId={message.id}
+                          enabled={
+                            !!(
+                              !reading &&
+                              message.cached &&
+                              (message.text || message.html)
+                            )
+                          }
+                          trusted={trustedSender}
+                          remote={remoteAllowed}
+                          dark={dark}
+                          subject={message.subject}
+                          html={message.html}
+                          text={message.text}
+                        >
+                          {!reading && message.cached && (
+                            <>
+                              <MenuItem
+                                onSelect={() =>
+                                  setRemote(!remoteAllowed, false)
+                                }
+                              >
+                                {remoteAllowed
+                                  ? t("本邮件不加载")
+                                  : t("加载图片")}
+                              </MenuItem>
+                              <MenuItem
+                                onSelect={() => setRemote(!trustedSender, true)}
+                              >
+                                {trustedSender
+                                  ? t("总是阻止")
+                                  : trustScope
+                                    ? t("信任 {0}", { 0: trustScope })
+                                    : t("信任发件人")}
+                              </MenuItem>
+                            </>
+                          )}
+                        </MessageTranslation>
                       </header>
                       <div className="reader-card-body">
-                        <div
-                          className={
-                            "remote-notice" + (remoteAllowed ? " trusted" : "")
-                          }
-                        >
-                          {remoteAllowed ? (
-                            <ShieldCheck size={13} />
-                          ) : (
-                            <ShieldAlert size={13} />
-                          )}
-                          <span>
-                            {remoteAllowed
-                              ? t(
-                                  "可信发件人{0} · 已自动加载远程图片，保留原始排版",
-                                  { 0: trustNote ? `（${trustNote}）` : "" },
-                                )
-                              : t(
-                                  "发件人未信任 · 已阻止远程图片，按安全排版显示",
-                                )}
-                          </span>
-                          {!reading && message.cached && (
-                            <div className="remote-actions">
-                              {remoteAllowed ? (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    type="button"
-                                    onClick={() => setRemote(false, false)}
-                                  >
-                                    {t("本邮件不加载")}
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    type="button"
-                                    onClick={() => setRemote(false, true)}
-                                  >
-                                    {t("总是阻止")}
-                                  </Button>
-                                </>
-                              ) : (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    type="button"
-                                    onClick={() => setRemote(true, false)}
-                                  >
-                                    {t("加载图片")}
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    type="button"
-                                    onClick={() => setRemote(true, true)}
-                                  >
-                                    {trustScope
-                                      ? t("信任 {0}", { 0: trustScope })
-                                      : t("信任发件人")}
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </div>
                         {reading ? (
                           <div className="reader-placeholder">
                             {t("正在获取邮件正文…")}

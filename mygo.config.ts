@@ -44,7 +44,7 @@ export default defineConfig({
   // buildCommand and embeds frontendDist into the app.
   devUrl: `http://localhost:${process.env.MYMAIL_DEV_PORT || "5173"}`,
   devCommand: "bun run dev:web",
-  buildCommand: "bun run build:web && bun run licenses",
+  buildCommand: "bun run build:translation && bun run build:web && bun run licenses",
   frontendDist: "dist",
   bindings: "src/mygo.ts",
   // macOS registers mailto in the bundle's CFBundleURLTypes; the app becomes
