@@ -33,7 +33,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dompurify": "^3.3.0",
-    "lucide-react": "^0.460.0",
+    "lucide-react": "^1.69.0",
     "mygo-runtime": "0.6.3",
     "pdfjs-dist": "^6.5.438",
     "react": "^19.0.0",
