@@ -1,3 +1,4 @@
+import { t } from "../../lib/i18n";
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
@@ -11,6 +12,7 @@ export interface ModalProps {
   /** 给读屏的补充说明；不传则用 title 兜底 */
   description?: string;
   size?: "sm" | "md" | "lg";
+  className?: string;
   children: React.ReactNode;
   /** 底部操作区，不传则不渲染 `.modal-f` */
   footer?: React.ReactNode;
@@ -43,6 +45,7 @@ export function Modal({
   title,
   description,
   size = "md",
+  className,
   children,
   footer,
   dismissOnOverlay = true,
@@ -77,6 +80,7 @@ export function Modal({
             onKeyDown={onKeyDown}
             className={cn(
               "modal enter",
+              className,
               size === "sm" && "sm",
               size === "lg" && "lg",
             )}
@@ -86,13 +90,13 @@ export function Modal({
                 <h2>{title}</h2>
               </DialogPrimitive.Title>
               <DialogPrimitive.Close asChild>
-                <IconButton size="sm" label="关闭" title="">
+                <IconButton size="sm" label={t("关闭")} title="">
                   <X style={{ width: 15, height: 15 }} />
                 </IconButton>
               </DialogPrimitive.Close>
             </div>
             <DialogPrimitive.Description className="sr">
-              {description ?? (typeof title === "string" ? title : "对话框")}
+              {description ?? (typeof title === "string" ? title : t("对话框"))}
             </DialogPrimitive.Description>
             <div className="modal-b">{children}</div>
             {footer ? <div className="modal-f">{footer}</div> : null}

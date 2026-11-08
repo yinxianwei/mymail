@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import { safeHttpLink } from "@/lib/links";
 
-/** A single message body this tall is a runaway layout, not a real email. */
-const maxFrameHeight = 20000;
+/** Bound pathological layouts while allowing long newsletters well over 20k px. */
+const maxFrameHeight = 1000000;
 
 /**
  * The reading frame of a message. The document comes from `mailDocument` and
@@ -31,6 +31,10 @@ export function MailFrame({
   open.current = onOpenLink;
 
   useEffect(() => {
+    if (frame.current) frame.current.style.height = "1px";
+  }, [doc]);
+
+  useEffect(() => {
     function onMessage(event: MessageEvent) {
       if (!frame.current || event.source !== frame.current.contentWindow)
         return;
@@ -55,6 +59,7 @@ export function MailFrame({
       title={title}
       sandbox="allow-scripts"
       referrerPolicy="no-referrer"
+      scrolling="no"
       srcDoc={doc}
     />
   );

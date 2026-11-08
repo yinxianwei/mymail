@@ -1,3 +1,4 @@
+import { t } from "../../lib/i18n";
 import * as React from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -76,19 +77,26 @@ export function ChipInput({
 
   return (
     <div
-      className={cn("flex flex-wrap items-center gap-1.5 py-1", className)}
+      data-slot="chip-input"
+      className={cn(
+        "flex min-h-[var(--h-md)] w-full flex-wrap items-center gap-1.5 rounded-sm border border-line-strong bg-surface px-[7px] py-1.5",
+        "transition-[border-color,box-shadow] duration-[var(--dur)] focus-within:border-brand focus-within:shadow-[0_0_0_3px_var(--accent-soft)]",
+        "hover:[&:not(:focus-within)]:border-[color-mix(in_srgb,var(--border-strong)_60%,var(--text-3))]",
+        disabled && "cursor-not-allowed bg-surface-2 opacity-60",
+        className,
+      )}
       onClick={() => input.current?.focus()}
     >
       {chips.map((chip, index) => (
         <span
           key={chip}
-          className="recipient-chip inline-flex max-w-full min-w-0 items-center gap-1 rounded-[5px] bg-[var(--accent-soft)] py-[3px] pl-2 pr-1 text-[12.5px] leading-[1.7] text-[var(--text)]"
+          className="recipient-chip inline-flex h-[20px] max-w-full min-w-0 items-center gap-1 rounded-xs bg-surface-2 pl-1.5 pr-1 text-xs text-foreground-2"
         >
           <span className="truncate">{chip}</span>
           <button
             type="button"
-            aria-label={"移除 " + chip}
-            title="移除"
+            aria-label={t("移除 ") + chip}
+            title={t("移除")}
             disabled={disabled}
             onClick={(event) => {
               // The row focuses the input on any click; removing a chip must
@@ -145,7 +153,8 @@ export function ChipInput({
       />
       {invalid && (
         <span className="w-full text-[11px] text-[var(--red)]">
-          “{invalid}”不是有效地址，需要包含 @ 和域名
+          “{invalid}
+          {t("”不是有效地址，需要包含 @ 和域名")}
         </span>
       )}
     </div>

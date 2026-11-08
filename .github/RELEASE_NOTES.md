@@ -1,7 +1,7 @@
 ## My Mail — early preview / 早期预览
 
 A local-first desktop email client built with Go + React and the system WebView.
-This preview targets **macOS Apple Silicon (arm64)**. The app interface is Chinese.
+This preview targets **macOS Apple Silicon (arm64)**. The app supports English and Simplified Chinese (Settings → Language).
 
 - Multiple accounts and a unified inbox; cached mail can be read offline.
 - Reply/forward, per-message local drafts, attachments, Cc/Bcc and keyboard send.

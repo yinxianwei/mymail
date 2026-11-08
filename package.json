@@ -11,7 +11,7 @@
   "homepage": "https://github.com/yinxianwei/mymail",
   "bugs": "https://github.com/yinxianwei/mymail/issues",
   "type": "module",
-  "description": "A local-first desktop email client built with Go and React. Unified inbox, offline reading, and direct IMAP/SMTP connections.",
+  "description": "A lightweight, local-first desktop email client built with MyGo and React. Native WebView, unified inbox, and offline reading.",
   "scripts": {
     "dev": "mygo dev",
     "build": "mygo build",
@@ -25,13 +25,17 @@
     "format": "prettier --write src tests vite.config.ts mygo.config.ts"
   },
   "dependencies": {
+    "@radix-ui/react-checkbox": "^1.4.1",
     "@radix-ui/react-dialog": "^1.1.6",
+    "@radix-ui/react-select": "^2.4.1",
     "@radix-ui/react-slot": "^1.1.2",
+    "@radix-ui/react-tabs": "^1.2.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dompurify": "^3.3.0",
     "lucide-react": "^0.460.0",
     "mygo-runtime": "0.6.3",
+    "pdfjs-dist": "^6.5.438",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^3.0.2"

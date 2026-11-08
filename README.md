@@ -1,6 +1,6 @@
 <p align="center"><img src="design/logo/logo.svg" width="88" alt="My Mail logo"></p>
 <h1 align="center">My Mail</h1>
-<p align="center">A local-first desktop email client built with Go and React.<br>Multiple inboxes. Offline reading. Your own IMAP server.</p>
+<p align="center">A lightweight, local-first desktop email client built with MyGo and React.<br>Multiple inboxes. Offline reading. Your own IMAP server.</p>
 <p align="center">
   <a href="https://github.com/yinxianwei/mymail/actions/workflows/ci.yml"><img src="https://github.com/yinxianwei/mymail/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
@@ -15,7 +15,7 @@
   <a href="https://github.com/yinxianwei/mymail/issues">Feedback</a>
 </p>
 
-![My Mail inbox in light mode, using fictional demo messages](docs/images/inbox-light.png)
+![My Mail English interface with fictional demo messages; original mail content is preserved](docs/images/inbox-en.png)
 
 ## Why My Mail?
 
@@ -33,11 +33,17 @@ store. You can read the code, run it yourself and help shape what comes next.
   account, with system folders first and collapsible custom folders.
 - **Cached mail you can read offline.** Bodies load on demand; scrolling loads
   older headers in pages of 50. A virtualized list keeps the UI manageable.
+  Filter cached rows by unread, starred or known attachments; search headers
+  and cached attachment names together with a filter.
 - **Everyday mail actions.** Reply, reply all, forward, star, mark read/unread,
   move and delete. Changes are queued locally for IMAP synchronization.
 - **Compose without losing your draft.** Per-message local drafts, To/Cc/Bcc,
   attachments and ⌘/Ctrl + Enter to send. Sending uses plain text with an escaped
   HTML alternative; it is not a rich-text editor.
+  The local draft manager lists drafts across accounts and lets you resume or
+  confirm deletion without changing server-side drafts.
+- **Preview attachments.** View images, paginated PDFs and text files locally.
+  Click a filename to download it; cached attachments also work offline.
 - **Stay informed.** Menu bar unread count, system notifications and IMAP IDLE
   with polling fallback. Notifications show counts rather than email content.
 - **A focused desktop interface.** Light/dark themes, keyboard-friendly dialogs,
@@ -52,7 +58,7 @@ store. You can read the code, run it yourself and help shape what comes next.
 
 ## Try it
 
-**Early preview · macOS Apple Silicon · Chinese interface.** Windows, Linux and
+**Early preview · macOS Apple Silicon · English / Chinese interface.** Windows, Linux and
 Intel Mac desktop releases have not been validated. OAuth2 login, including
 Outlook and Gmail OAuth, is not implemented. Provider compatibility is still
 being tested; working local protocol tests are not a provider certification.
@@ -60,7 +66,7 @@ being tested; working local protocol tests are not a provider certification.
 1. Open [Releases](https://github.com/yinxianwei/mymail/releases) and choose a
    macOS arm64 DMG if a preview has been published. Until then, build from source.
 2. Open the DMG and drag **My Mail** into Applications.
-3. Choose **打开本地示例** to explore without credentials, or add an IMAP/SMTP
+3. Choose **Open local demo / 打开本地示例** to explore without credentials, or add an IMAP/SMTP
    account using your provider's app password / authorization code.
 
 Automated preview builds are ad-hoc signed and **not notarized by Apple**.
@@ -91,6 +97,10 @@ bun run build         # Desktop app + DMG, including dependency notices
 
 Build output: `build/darwin-arm64/`. See the [development guide](docs/DEVELOPMENT.md)
 for isolated data, bindings, diagnostics and the project layout.
+
+In **Account settings → Language**, choose **System default**, **English** or
+**简体中文**. Changes apply immediately and are saved for the next launch.
+Mail content and custom folder names keep their original language.
 
 ## Data and security
 

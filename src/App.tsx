@@ -1,4 +1,14 @@
-import { useEffect, useId, useRef, useState } from "react";
+import {
+  AttachmentPreview,
+  type PreviewTarget,
+} from "./components/attachment-preview";
+import { SettingsSections } from "./components/settings-sections";
+import { Checkbox } from "./components/ui/checkbox";
+import { Segmented } from "./components/ui/segmented";
+import { ChoiceSelect } from "./components/ui/choice-select";
+import { t, useLocale, getLocale, setLanguagePreference } from "./lib/i18n";
+import { LanguagePreferences } from "./components/language-preferences";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   Mail,
   Send,
@@ -39,6 +49,8 @@ import {
   type CacheStats,
   events,
 } from "./mygo";
+import { DraftManager } from "./components/draft-manager";
+import { filterCachedMessages, type MessageFilter } from "./lib/message-filter";
 import { UnifiedInboxes } from "./components/unified-inboxes";
 import { FolderSidebar } from "./components/folder-sidebar";
 import { MailFrame } from "./components/mail-frame";
@@ -107,7 +119,7 @@ const dateText = (raw: string) => {
   const d = new Date(raw);
   return Number.isNaN(+d)
     ? ""
-    : d.toLocaleDateString("zh-CN", { month: "short", day: "numeric" });
+    : d.toLocaleDateString(getLocale(), { month: "short", day: "numeric" });
 };
 /** Everyone on a reply-all thread except the sender (that is the To line) and
  *  the reader themselves; duplicates and the reader's own address are dropped. */
@@ -137,6 +149,26 @@ const emptyDesktop: DesktopState = {
   revision: 0,
 };
 export function App() {
+  const locale = useLocale();
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+  useEffect(() => {
+    let live = true;
+    const refresh = () =>
+      api
+        .getLanguage()
+        .then((state) => {
+          if (live) setLanguagePreference(state.preference, state.locale);
+        })
+        .catch(() => {});
+    void refresh();
+    window.addEventListener("mygo:locale", refresh);
+    return () => {
+      live = false;
+      window.removeEventListener("mygo:locale", refresh);
+    };
+  }, []);
   const [unified, setUnified] = useState(() => {
     try {
       return localStorage.getItem("mail:inbox-scope") === "all";
@@ -169,6 +201,13 @@ export function App() {
   const [settings, setSettings] = useState(false),
     [compose, setCompose] = useState(false),
     [query, setQuery] = useState("");
+  const [draftManager, setDraftManager] = useState(false);
+  const [previewTarget, setPreviewTarget] = useState<PreviewTarget | null>(
+    null,
+  );
+  const savingAttachmentRef = useRef(false);
+  const [messageFilter, setMessageFilter] = useState<MessageFilter>("all");
+  const filtering = !!query.trim() || messageFilter !== "all";
   const [composeSeed, setComposeSeed] = useState<ComposeSeed | null>(null),
     // “写邮件” starts a blank message. The window is otherwise reused by
     // reply/forward, so the intent has to travel with the open flag: a null
@@ -365,6 +404,7 @@ export function App() {
     ]);
     setFolder("INBOX");
     setQuery("");
+    setMessageFilter("all");
     setError("");
     if (!account) return;
     let cancelled = false;
@@ -424,6 +464,7 @@ export function App() {
     ++readGeneration.current;
     setFolder("INBOX");
     setQuery("");
+    setMessageFilter("all");
     setMessage(null);
     api
       .resolveMailTarget(target)
@@ -448,6 +489,7 @@ export function App() {
     setMessage(null);
     setReading(false);
     setQuery("");
+    setMessageFilter("all");
     setError("");
     if (!account) return;
     setMessages([]);
@@ -475,6 +517,7 @@ export function App() {
       ++readGeneration.current;
       setMessage(null);
       setQuery("");
+      setMessageFilter("all");
       api
         .allInboxMessages()
         .then((ms) => {
@@ -511,7 +554,7 @@ export function App() {
     }
   }
   async function loadOlder() {
-    if (!account || historyBusy.current || busy || query.trim()) return;
+    if (!account || historyBusy.current || busy || filtering) return;
     const token = ++historyRequest.current,
       g = generation.current;
     historyBusy.current = token;
@@ -598,7 +641,11 @@ export function App() {
       if (g === readGeneration.current) {
         setMessage(full);
         setMessages((ms) =>
-          ms.map((x) => (x.id === full.id ? { ...x, cached: true } : x)),
+          ms.map((x) =>
+            x.id === full.id
+              ? { ...x, cached: true, attachments: full.attachments }
+              : x,
+          ),
         );
         if (!full.seen && prefs.autoMarkRead) {
           await api.markRead(full.id);
@@ -619,6 +666,8 @@ export function App() {
   // The Go side opens a native save panel; an empty path means the reader
   // cancelled, which is not an error worth a banner.
   async function saveAttachment(m: Message, index: number) {
+    if (savingAttachmentRef.current) return;
+    savingAttachmentRef.current = true;
     setSavingAttachment(index);
     setError("");
     setNotice("");
@@ -628,6 +677,7 @@ export function App() {
     } catch (e) {
       setError(errorText(e));
     } finally {
+      savingAttachmentRef.current = false;
       setSavingAttachment(null);
     }
   }
@@ -647,11 +697,7 @@ export function App() {
       setBusy("");
     }
   }
-  const matching = messages.filter((m) =>
-    (m.subject + " " + m.from + " " + m.to)
-      .toLocaleLowerCase()
-      .includes(query.toLocaleLowerCase()),
-  );
+  const matching = filterCachedMessages(messages, query, messageFilter);
   const visible = matching.slice(0, rowLimit);
   const rowHeight = unified ? unifiedRowHeight : mailRowHeight;
   const totalRows = visible.length;
@@ -691,6 +737,20 @@ export function App() {
           ? false
           : trustedSender))
     : false;
+  // Keep the nonce-bearing document stable across unrelated state updates;
+  // otherwise opening settings reloads the frame and resets its scroll height.
+  const bodyHtml = message?.html || "";
+  const readerDocument = useMemo(
+    () =>
+      bodyHtml
+        ? mailDocument(bodyHtml, {
+            dark,
+            remote: remoteAllowed,
+            rich: trustedSender,
+          })
+        : "",
+    [bodyHtml, dark, remoteAllowed, trustedSender],
+  );
   const trust = message
     ? trustReason(
         message.from,
@@ -702,12 +762,12 @@ export function App() {
   const trustNote = !remoteAllowed
     ? ""
     : trust === "provider"
-      ? "常用邮箱服务商"
+      ? t("常用邮箱服务商")
       : trust === "account"
-        ? "与你的账号同域"
+        ? t("与你的账号同域")
         : trust === "allowed"
-          ? `已信任 ${trustScope}`
-          : "仅本次会话";
+          ? t("已信任 {0}", { 0: trustScope })
+          : t("仅本次会话");
   function setRemote(trusted: boolean, persist: boolean) {
     if (!message) return;
     setRemoteOverride((values) => ({ ...values, [message.id]: trusted }));
@@ -811,7 +871,7 @@ export function App() {
     if (
       !account ||
       !messages.length ||
-      query.trim() ||
+      filtering ||
       busy ||
       loadingOlder ||
       olderError ||
@@ -828,6 +888,7 @@ export function App() {
   }, [
     account,
     query,
+    filtering,
     busy,
     loadingOlder,
     olderError,
@@ -849,7 +910,16 @@ export function App() {
           }}
         >
           <PenLine size={15} />
-          写邮件
+          {t("写邮件")}
+        </Button>
+        <Button
+          className="local-drafts-button"
+          variant="ghost"
+          disabled={!accounts.length}
+          onClick={() => setDraftManager(true)}
+        >
+          <FileText size={15} />
+          {t("本地草稿")}
         </Button>
         <UnifiedInboxes
           accounts={accounts}
@@ -877,10 +947,10 @@ export function App() {
           <div className="sidebar-actions">
             <Button variant="ghost" onClick={() => setSettings(true)}>
               <Settings size={15} />
-              账号设置
+              {t("账号设置")}
             </Button>
             <IconButton
-              label={dark ? "浅色主题" : "深色主题"}
+              label={dark ? t("浅色主题") : t("深色主题")}
               onClick={() => setDark((v) => !v)}
             >
               {dark ? <Sun /> : <Moon />}
@@ -894,10 +964,10 @@ export function App() {
             className={"mail-feedback " + (error ? "error" : "")}
             role={error ? "alert" : "status"}
           >
-            <span>{error || notice}</span>
+            <span>{t(error || notice)}</span>
             <IconButton
               size="xs"
-              label="关闭提示"
+              label={t("关闭提示")}
               onClick={() => {
                 setError("");
                 setNotice("");
@@ -912,24 +982,24 @@ export function App() {
             <span className="welcome-icon">
               <Mail size={28} />
             </span>
-            <h2>添加邮箱</h2>
+            <h2>{t("添加邮箱")}</h2>
             <div className="welcome-actions">
               <Button variant="primary" onClick={() => setSettings(true)}>
                 <Plus size={15} />
-                添加邮箱
+                {t("添加邮箱")}
               </Button>
               <Button disabled={!!busy} onClick={() => void demo()}>
-                打开本地示例
+                {t("打开本地示例")}
               </Button>
             </div>
           </div>
         ) : (
           <div className={"mail-workspace " + (message ? "has-message" : "")}>
-            <section className="message-list" aria-label="邮件列表">
+            <section className="message-list" aria-label={t("邮件列表")}>
               <div className="list-toolbar">
                 <strong>
                   {unified
-                    ? "所有收件箱"
+                    ? t("所有收件箱")
                     : folderTitle(
                         folders.find((f) => f.name === folder) ?? {
                           name: folder,
@@ -943,8 +1013,8 @@ export function App() {
                 <IconButton
                   label={
                     busy || (unified && desktop.checking)
-                      ? "正在同步"
-                      : "刷新邮件"
+                      ? t("正在同步")
+                      : t("刷新邮件")
                   }
                   disabled={!!busy || (unified && desktop.checking)}
                   onClick={() => void sync()}
@@ -958,9 +1028,9 @@ export function App() {
               </div>
               <div className="list-search">
                 <Input
-                  aria-label="搜索已缓存邮件"
+                  aria-label={t("搜索已缓存邮件")}
                   icon={<Search size={14} />}
-                  placeholder="搜索已缓存的邮件…"
+                  placeholder={t("搜索已缓存的邮件…")}
                   value={query}
                   onChange={(e) => {
                     setQuery(e.target.value);
@@ -972,6 +1042,32 @@ export function App() {
                 />
               </div>
               <div
+                className="message-filters"
+                role="group"
+                aria-label={t("邮件筛选")}
+              >
+                <Segmented
+                  aria-label={t("邮件筛选")}
+                  value={messageFilter}
+                  options={[
+                    { value: "all", label: t("全部") },
+                    { value: "unread", label: t("未读") },
+                    { value: "starred", label: t("星标") },
+                    { value: "attachments", label: t("附件") },
+                  ]}
+                  onValueChange={(value) => {
+                    setMessageFilter(value);
+                    setRowLimit(50);
+                    setScrollPos((p) => ({ ...p, top: 0 }));
+                    if (messageScroll.current)
+                      messageScroll.current.scrollTop = 0;
+                  }}
+                />
+                {filtering && (
+                  <span className="cache-filter-hint">{t("已缓存")}</span>
+                )}
+              </div>
+              <div
                 className="message-scroll"
                 ref={messageScroll}
                 onScroll={(event) => {
@@ -980,7 +1076,7 @@ export function App() {
                     top: node.scrollTop,
                     height: node.clientHeight || 600,
                   });
-                  if (query.trim()) {
+                  if (filtering) {
                     if (
                       matching.length > rowLimit &&
                       node.scrollHeight - node.scrollTop - node.clientHeight <
@@ -1026,7 +1122,7 @@ export function App() {
                               size={12}
                               fill="currentColor"
                               className="row-star"
-                              aria-label="已加星标"
+                              aria-label={t("已加星标")}
                             />
                           )}
                           <strong>
@@ -1038,16 +1134,16 @@ export function App() {
                           <time>{dateText(m.date)}</time>
                         </span>
                         <span className="message-subject">
-                          {m.subject || "（无主题）"}
+                          {m.subject || t("（无主题）")}
                         </span>
                         {unified && (
                           <span className="message-account">
                             {accounts.find((a) => a.id === m.accountId)
-                              ?.email || "邮箱账号"}
+                              ?.email || t("邮箱账号")}
                           </span>
                         )}
                         {!m.seen && (
-                          <span className="unread-dot" aria-label="未读" />
+                          <span className="unread-dot" aria-label={t("未读")} />
                         )}
                       </button>
                     ))}
@@ -1056,26 +1152,28 @@ export function App() {
                 {visible.length === 0 && (
                   <div className="list-empty">
                     <Inbox size={22} />
-                    <p>{query ? "没有匹配的邮件" : "这里还没有邮件"}</p>
+                    <p>
+                      {filtering ? t("没有匹配的邮件") : t("这里还没有邮件")}
+                    </p>
                     <small>
-                      {query
-                        ? "试试发件人或主题关键字"
-                        : "点击列表右上角刷新邮件。"}
+                      {filtering
+                        ? t("可更换关键词或筛选条件，仅查找已缓存邮件。")
+                        : t("点击列表右上角刷新邮件。")}
                     </small>
                   </div>
                 )}
-                {!query.trim() && (
+                {!filtering && (
                   <div className="history-footer">
                     {loadingOlder ? (
                       <span role="status">
                         <RefreshCw size={13} className="spinning" />
-                        正在加载更早邮件…
+                        {t("正在加载更早邮件…")}
                       </span>
                     ) : olderError ? (
                       <>
-                        <p role="alert">{olderError}</p>
+                        <p role="alert">{t(olderError)}</p>
                         <Button size="sm" onClick={() => void loadOlder()}>
-                          重试加载
+                          {t("重试加载")}
                         </Button>
                       </>
                     ) : moreAvailable ? (
@@ -1085,22 +1183,22 @@ export function App() {
                         disabled={!!busy}
                         onClick={() => void loadOlder()}
                       >
-                        加载更早邮件
+                        {t("加载更早邮件")}
                       </Button>
                     ) : messages.length > 0 ? (
-                      <span>已加载全部邮件</span>
+                      <span>{t("已加载全部邮件")}</span>
                     ) : null}
                   </div>
                 )}
               </div>
             </section>
-            <section className="message-reader" aria-label="邮件正文">
+            <section className="message-reader" aria-label={t("邮件正文")}>
               {message ? (
                 <div className="reader-shell">
                   <div className="reader-actions">
                     <IconButton
                       className="reader-back"
-                      label="返回邮件列表"
+                      label={t("返回邮件列表")}
                       onClick={() => {
                         ++readGeneration.current;
                         setMessage(null);
@@ -1111,7 +1209,7 @@ export function App() {
                     </IconButton>
                     <IconButton
                       className="reader-action"
-                      label="回复"
+                      label={t("回复")}
                       disabled={reading}
                       onClick={() => replyTo("reply")}
                     >
@@ -1119,7 +1217,7 @@ export function App() {
                     </IconButton>
                     <IconButton
                       className="reader-action"
-                      label="回复全部"
+                      label={t("回复全部")}
                       disabled={reading}
                       onClick={() => replyTo("replyAll")}
                     >
@@ -1127,7 +1225,7 @@ export function App() {
                     </IconButton>
                     <IconButton
                       className="reader-action"
-                      label="转发"
+                      label={t("转发")}
                       disabled={reading}
                       onClick={() => replyTo("forward")}
                     >
@@ -1138,7 +1236,7 @@ export function App() {
                       className={
                         "reader-action" + (message.flagged ? " flagged" : "")
                       }
-                      label={message.flagged ? "取消星标" : "加星标"}
+                      label={message.flagged ? t("取消星标") : t("加星标")}
                       active={message.flagged}
                       disabled={reading || !!managing}
                       onClick={() =>
@@ -1152,7 +1250,7 @@ export function App() {
                     </IconButton>
                     <IconButton
                       className="reader-action"
-                      label={message.seen ? "标记为未读" : "标记为已读"}
+                      label={message.seen ? t("标记为未读") : t("标记为已读")}
                       disabled={reading || !!managing}
                       onClick={() =>
                         void runManage(
@@ -1165,7 +1263,7 @@ export function App() {
                     </IconButton>
                     <IconButton
                       className="reader-action"
-                      label="移动到文件夹"
+                      label={t("移动到文件夹")}
                       disabled={reading || !!managing}
                       onClick={openMove}
                     >
@@ -1173,7 +1271,7 @@ export function App() {
                     </IconButton>
                     <IconButton
                       className="reader-action"
-                      label={inTrash ? "永久删除" : "删除邮件"}
+                      label={inTrash ? t("永久删除") : t("删除邮件")}
                       disabled={reading || !!managing}
                       onClick={() => setManageTarget("delete")}
                     >
@@ -1182,7 +1280,7 @@ export function App() {
                   </div>
                   <div className="reader-scroll" ref={readerScroll}>
                     <h1 className="reader-subject">
-                      {message.subject || "（无主题）"}
+                      {message.subject || t("（无主题）")}
                     </h1>
                     <article className="reader-card">
                       <header className="reader-card-header">
@@ -1191,7 +1289,10 @@ export function App() {
                             <strong>{senderName(message.from)}</strong>
                             <time>{dateTimeText(message.date)}</time>
                           </div>
-                          <small className="reader-to">发至 {message.to}</small>
+                          <small className="reader-to">
+                            {t("发至")}
+                            {message.to}
+                          </small>
                           {senderName(message.from) !== message.from && (
                             <small className="reader-address">
                               {message.from}
@@ -1212,42 +1313,55 @@ export function App() {
                           )}
                           <span>
                             {remoteAllowed
-                              ? `可信发件人${trustNote ? `（${trustNote}）` : ""} · 已自动加载远程图片，保留原始排版`
-                              : "发件人未信任 · 已阻止远程图片，按安全排版显示"}
+                              ? t(
+                                  "可信发件人{0} · 已自动加载远程图片，保留原始排版",
+                                  { 0: trustNote ? `（${trustNote}）` : "" },
+                                )
+                              : t(
+                                  "发件人未信任 · 已阻止远程图片，按安全排版显示",
+                                )}
                           </span>
                           {!reading && message.cached && (
                             <div className="remote-actions">
                               {remoteAllowed ? (
                                 <>
-                                  <button
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
                                     type="button"
                                     onClick={() => setRemote(false, false)}
                                   >
-                                    本邮件不加载
-                                  </button>
-                                  <button
+                                    {t("本邮件不加载")}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
                                     type="button"
                                     onClick={() => setRemote(false, true)}
                                   >
-                                    总是阻止
-                                  </button>
+                                    {t("总是阻止")}
+                                  </Button>
                                 </>
                               ) : (
                                 <>
-                                  <button
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
                                     type="button"
                                     onClick={() => setRemote(true, false)}
                                   >
-                                    加载图片
-                                  </button>
-                                  <button
+                                    {t("加载图片")}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
                                     type="button"
                                     onClick={() => setRemote(true, true)}
                                   >
                                     {trustScope
-                                      ? `信任 ${trustScope}`
-                                      : "信任发件人"}
-                                  </button>
+                                      ? t("信任 {0}", { 0: trustScope })
+                                      : t("信任发件人")}
+                                  </Button>
                                 </>
                               )}
                             </div>
@@ -1255,18 +1369,14 @@ export function App() {
                         </div>
                         {reading ? (
                           <div className="reader-placeholder">
-                            正在获取邮件正文…
+                            {t("正在获取邮件正文…")}
                           </div>
                         ) : message.cached ? (
                           <>
                             {message.html ? (
                               <MailFrame
-                                title="隔离的邮件正文"
-                                doc={mailDocument(message.html, {
-                                  dark,
-                                  remote: remoteAllowed,
-                                  rich: trustedSender,
-                                })}
+                                title={t("隔离的邮件正文")}
+                                doc={readerDocument}
                                 onOpenLink={(href) => {
                                   setNotice(
                                     remoteAllowed
@@ -1283,7 +1393,8 @@ export function App() {
                               />
                             ) : (
                               <pre className="plain-body">
-                                {message.text || "这封邮件没有可显示的正文。"}
+                                {message.text ||
+                                  t("这封邮件没有可显示的正文。")}
                               </pre>
                             )}
                             {message.attachments?.length > 0 && (
@@ -1294,12 +1405,22 @@ export function App() {
                                     key={file.index}
                                   >
                                     <Paperclip size={14} />
-                                    <span
-                                      className="attachment-name"
-                                      title={file.name}
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="attachment-name attachment-download"
+                                      title={t("下载附件：{0}", {
+                                        0: file.name,
+                                      })}
+                                      disabled={savingAttachment !== null}
+                                      onClick={() =>
+                                        void saveAttachment(message, file.index)
+                                      }
                                     >
-                                      {file.name || "未命名附件"}
-                                    </span>
+                                      <span className="truncate">
+                                        {file.name || t("未命名附件")}
+                                      </span>
+                                    </Button>
                                     {/* A row cached by an older build has no
                                         size until its bytes are fetched. */}
                                     {file.size > 0 && (
@@ -1307,7 +1428,24 @@ export function App() {
                                         {fileSize(file.size)}
                                       </span>
                                     )}
-                                    <button
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      type="button"
+                                      className="attachment-preview-action"
+                                      onClick={() =>
+                                        setPreviewTarget({
+                                          messageId: message.id,
+                                          index: file.index,
+                                          name: file.name,
+                                        })
+                                      }
+                                    >
+                                      {t("预览")}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
                                       type="button"
                                       className="attachment-save"
                                       disabled={savingAttachment !== null}
@@ -1316,9 +1454,9 @@ export function App() {
                                       }
                                     >
                                       {savingAttachment === file.index
-                                        ? "保存中…"
-                                        : "保存"}
-                                    </button>
+                                        ? t("保存中…")
+                                        : t("保存")}
+                                    </Button>
                                   </div>
                                 ))}
                               </div>
@@ -1326,7 +1464,7 @@ export function App() {
                           </>
                         ) : (
                           <div className="reader-placeholder">
-                            正文尚未获取，可重新点击邮件重试。
+                            {t("正文尚未获取，可重新点击邮件重试。")}
                           </div>
                         )}
                       </div>
@@ -1338,53 +1476,99 @@ export function App() {
                   <span className="reader-empty-icon">
                     <Mail size={26} />
                   </span>
-                  <h2>选择一封邮件</h2>
-                  <p>选择左侧的邮件，在这里阅读。</p>
+                  <h2>{t("选择一封邮件")}</h2>
+                  <p>{t("选择左侧的邮件，在这里阅读。")}</p>
                 </div>
               )}
             </section>
           </div>
         )}
       </main>
+      {previewTarget && (
+        <AttachmentPreview
+          key={`${previewTarget.messageId}:${previewTarget.index}`}
+          target={previewTarget}
+          onClose={() => setPreviewTarget(null)}
+        />
+      )}
       <Modal
         open={settings}
         onOpenChange={setSettings}
-        title="设置"
-        description="邮箱账号、通知、邮件偏好与本机缓存"
-        size="md"
-        footer={
-          // Preferences apply immediately; the button only closes the dialog so
-          // there is an explicit way out besides Esc / the title-bar close.
-          <Button variant="primary" onClick={() => setSettings(false)}>
-            完成
-          </Button>
-        }
+        title={t("设置")}
+        description={t("邮箱账号、通知、邮件偏好与本机缓存")}
+        size="lg"
+        className="settings-modal"
       >
-        <DesktopPreferences state={desktop} onChange={acceptDesktop} />
-        <MailPreferences
-          prefs={prefs}
-          pending={pendingOps}
-          cache={cache}
-          onChange={changePrefs}
-          onTrim={() => void trimCacheNow()}
-          onTestMailto={() => void testMailto()}
-        />
-        <AccountForm
-          accounts={accounts}
-          active={account?.id}
-          database={database}
-          onSelect={(a) => {
-            selectAccount(a);
-            setSettings(false);
-          }}
-          onAdded={(a) => {
-            setAccounts((as) => [...as, a]);
-            setUnified(false);
-            rememberScope(`account:${a.id}`);
-            setAccount(a);
-            setSettings(false);
-            setNotice("账号已保存，点击刷新邮件开始同步。");
-          }}
+        <SettingsSections
+          initialSection={accounts.length ? "general" : "accounts"}
+          general={
+            <>
+              <LanguagePreferences />
+              <section className="mail-preferences">
+                <div className="pref-row">
+                  <label htmlFor="pref-theme">{t("外观")}</label>
+                  <ChoiceSelect
+                    id="pref-theme"
+                    value={dark ? "dark" : "light"}
+                    onValueChange={(value) => setDark(value === "dark")}
+                    options={[
+                      { value: "light", label: t("浅色主题") },
+                      { value: "dark", label: t("深色主题") },
+                    ]}
+                  />
+                </div>
+              </section>
+              <DesktopPreferences state={desktop} onChange={acceptDesktop} />
+              <section className="mail-preferences">
+                <div className="pref-row">
+                  <span>{t("mailto 深链")}</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => void testMailto()}
+                  >
+                    {t("测试写信窗口")}
+                  </Button>
+                </div>
+                <p className="pref-note">
+                  {t(
+                    "将 My Mail 设为系统默认邮件阅读器后，可通过 mailto 链接打开写信。",
+                  )}
+                </p>
+              </section>
+            </>
+          }
+          accounts={
+            <AccountForm
+              accounts={accounts}
+              active={account?.id}
+              onSelect={(a) => {
+                selectAccount(a);
+                setSettings(false);
+              }}
+              onAdded={(a) => {
+                setAccounts((as) => [...as, a]);
+                setUnified(false);
+                rememberScope(`account:${a.id}`);
+                setAccount(a);
+                setSettings(false);
+                setNotice("账号已保存，点击刷新邮件开始同步。");
+              }}
+            />
+          }
+          mail={<MailPreferences prefs={prefs} onChange={changePrefs} />}
+          storage={
+            <>
+              <CachePreferences
+                prefs={prefs}
+                pending={pendingOps}
+                cache={cache}
+                onChange={changePrefs}
+                onTrim={() => void trimCacheNow()}
+              />
+              <StorageDiagnostics database={database} />
+            </>
+          }
         />
       </Modal>
       <Modal
@@ -1392,13 +1576,15 @@ export function App() {
         onOpenChange={(open) => {
           if (!open) setManageTarget("");
         }}
-        title="移动到文件夹"
-        description="选中目标文件夹后点「移动」，本地立即生效，联网后同步到服务器"
+        title={t("移动到文件夹")}
+        description={t(
+          "选中目标文件夹后点「移动」，本地立即生效，联网后同步到服务器",
+        )}
         size="sm"
         footer={
           <>
             <Button disabled={!!managing} onClick={() => setManageTarget("")}>
-              取消
+              {t("取消")}
             </Button>
             <Button
               variant="primary"
@@ -1412,7 +1598,7 @@ export function App() {
               }}
             >
               <FolderInput size={14} aria-hidden="true" />
-              移动
+              {t("移动")}
             </Button>
           </>
         }
@@ -1420,7 +1606,7 @@ export function App() {
         <div
           className="folder-picker"
           role="radiogroup"
-          aria-label="目标文件夹"
+          aria-label={t("目标文件夹")}
           onKeyDown={(event) => {
             const keys = [
               "ArrowDown",
@@ -1452,7 +1638,7 @@ export function App() {
           }}
         >
           {moveOptions.length === 0 ? (
-            <p className="folder-picker-empty">正在读取文件夹…</p>
+            <p className="folder-picker-empty">{t("正在读取文件夹…")}</p>
           ) : (
             moveOptions.map((f) => (
               <button
@@ -1489,11 +1675,11 @@ export function App() {
         onOpenChange={(open) => {
           if (!open) setManageTarget("");
         }}
-        title={inTrash ? "永久删除这封邮件？" : "删除这封邮件？"}
+        title={inTrash ? t("永久删除这封邮件？") : t("删除这封邮件？")}
         description={
           inTrash
-            ? "该操作会从服务器上移除，不能撤销。"
-            : "邮件会被移到已删除文件夹，可在该文件夹里再次删除。"
+            ? t("该操作会从服务器上移除，不能撤销。")
+            : t("邮件会被移到已删除文件夹，可在该文件夹里再次删除。")
         }
         size="sm"
         role="alertdialog"
@@ -1505,7 +1691,7 @@ export function App() {
               disabled={!!managing}
               onClick={() => setManageTarget("")}
             >
-              取消
+              {t("取消")}
             </Button>
             <Button
               variant="danger"
@@ -1519,17 +1705,37 @@ export function App() {
               }}
             >
               <Trash2 size={14} />
-              {inTrash ? "永久删除" : "删除"}
+              {inTrash ? t("永久删除") : t("删除")}
             </Button>
           </>
         }
       >
-        <p className="confirm-copy">{message?.subject || "（无主题）"}</p>
+        <p className="confirm-copy">{message?.subject || t("（无主题）")}</p>
       </Modal>
+      {draftManager && (
+        <DraftManager
+          accounts={accounts}
+          onClose={() => setDraftManager(false)}
+          onResume={(draft, owner) => {
+            selectAccount(owner);
+            const split = splitComposeBody(draft.body);
+            setComposeSeed({
+              draft,
+              content: split.content,
+              quote: split.quote,
+              key: draft.key || "new",
+            });
+            setComposeFresh(false);
+            setDraftManager(false);
+            setCompose(true);
+          }}
+        />
+      )}
       {senderAccount && (
         <Compose
           open={compose}
           account={senderAccount}
+          accounts={accounts}
           seed={composeSeed}
           fresh={composeFresh}
           draftKey={composeSeed?.key || "new"}
@@ -1586,32 +1792,33 @@ function DesktopPreferences({
     <section className="desktop-preferences">
       <div>
         <label>
-          <input
-            type="checkbox"
+          <Checkbox
             checked={state.notifications}
             disabled={busy}
-            onChange={(e) => void toggle(e.target.checked)}
+            onCheckedChange={(checked) => void toggle(checked === true)}
           />
-          新邮件通知
+          {t("新邮件通知")}
         </label>
         <Button
           size="sm"
           disabled={busy || !state.notifications}
           onClick={() => void test()}
         >
-          测试通知
+          {t("测试通知")}
         </Button>
       </div>
       {(message ||
         state.notificationStatus === "denied" ||
         state.lastError) && (
         <p role="status">
-          {message ||
-            (state.notificationStatus === "denied"
-              ? "请在系统设置中允许 My Mail 通知"
-              : state.notificationStatus === "pending"
-                ? "请处理系统通知授权提示"
-                : state.lastError)}
+          {t(
+            message ||
+              (state.notificationStatus === "denied"
+                ? t("请在系统设置中允许 My Mail 通知")
+                : state.notificationStatus === "pending"
+                  ? t("请处理系统通知授权提示")
+                  : state.lastError),
+          )}
         </p>
       )}
     </section>
@@ -1620,109 +1827,154 @@ function DesktopPreferences({
 
 function MailPreferences({
   prefs,
+  onChange,
+}: {
+  prefs: MailSettings;
+  onChange: (next: MailSettings) => void;
+}) {
+  return (
+    <section className="mail-preferences" aria-label={t("邮件偏好设置")}>
+      <div className="pref-row">
+        <label htmlFor="pref-interval">{t("检查新邮件间隔")}</label>
+        <ChoiceSelect
+          id="pref-interval"
+          className="pref-select"
+          value={prefs.syncIntervalSec}
+          onValueChange={(value) =>
+            onChange({ ...prefs, syncIntervalSec: Number(value) })
+          }
+          options={[15, 30, 60, 120, 300].map((seconds) => ({
+            value: seconds,
+            label:
+              seconds < 60
+                ? t("{0} 秒", { 0: seconds })
+                : t("{0} 分钟", { 0: seconds / 60 }),
+          }))}
+        />
+      </div>
+      <div className="pref-row">
+        <label htmlFor="pref-remote">{t("远程图片")}</label>
+        <ChoiceSelect
+          id="pref-remote"
+          className="pref-select"
+          value={prefs.remoteDefault}
+          onValueChange={(value) =>
+            onChange({ ...prefs, remoteDefault: value })
+          }
+          options={[
+            { value: "trusted", label: t("仅可信发件人自动加载") },
+            { value: "always", label: t("全部自动加载") },
+            { value: "never", label: t("全部阻止，手动加载") },
+          ]}
+        />
+      </div>
+      <label className="pref-check">
+        <Checkbox
+          checked={prefs.autoMarkRead}
+          onCheckedChange={(checked) =>
+            onChange({ ...prefs, autoMarkRead: checked === true })
+          }
+        />
+        {t("打开邮件后自动标记为已读")}
+      </label>
+      <label className="pref-check">
+        <Checkbox
+          checked={prefs.appendSent}
+          onCheckedChange={(checked) =>
+            onChange({ ...prefs, appendSent: checked === true })
+          }
+        />
+        {t("发送后把副本追加到服务器「已发送」")}
+      </label>
+      <p className="pref-note">
+        {t(
+          "仅当服务商不会自动保存 SMTP 副本时，才需要开启「已发送」追加，否则会产生重复。",
+        )}
+      </p>
+    </section>
+  );
+}
+
+function CachePreferences({
+  prefs,
   pending,
   cache,
   onChange,
   onTrim,
-  onTestMailto,
 }: {
   prefs: MailSettings;
   pending: number;
   cache: CacheStats;
   onChange: (next: MailSettings) => void;
   onTrim: () => void;
-  onTestMailto: () => void;
 }) {
   return (
-    <section className="mail-preferences" aria-label="邮件偏好设置">
+    <section className="mail-preferences" aria-label={t("本机缓存")}>
       <div className="pref-row">
-        <label htmlFor="pref-interval">检查新邮件间隔</label>
-        <select
-          id="pref-interval"
-          className="pref-select"
-          value={prefs.syncIntervalSec}
-          onChange={(e) =>
-            onChange({ ...prefs, syncIntervalSec: Number(e.target.value) })
-          }
-        >
-          {[15, 30, 60, 120, 300].map((seconds) => (
-            <option key={seconds} value={seconds}>
-              {seconds < 60 ? `${seconds} 秒` : `${seconds / 60} 分钟`}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="pref-row">
-        <label htmlFor="pref-remote">远程图片</label>
-        <select
-          id="pref-remote"
-          className="pref-select"
-          value={prefs.remoteDefault}
-          onChange={(e) =>
-            onChange({ ...prefs, remoteDefault: e.target.value })
-          }
-        >
-          <option value="trusted">仅可信发件人自动加载</option>
-          <option value="always">全部自动加载</option>
-          <option value="never">全部阻止，手动加载</option>
-        </select>
-      </div>
-      <label className="pref-check">
-        <input
-          type="checkbox"
-          checked={prefs.autoMarkRead}
-          onChange={(e) =>
-            onChange({ ...prefs, autoMarkRead: e.target.checked })
-          }
-        />
-        打开邮件后自动标记为已读
-      </label>
-      <label className="pref-check">
-        <input
-          type="checkbox"
-          checked={prefs.appendSent}
-          onChange={(e) => onChange({ ...prefs, appendSent: e.target.checked })}
-        />
-        发送后把副本追加到服务器「已发送」
-      </label>
-      <div className="pref-row">
-        <label htmlFor="pref-cache">本机缓存上限</label>
-        <select
+        <label htmlFor="pref-cache">{t("本机缓存上限")}</label>
+        <ChoiceSelect
           id="pref-cache"
           className="pref-select"
           value={prefs.cacheLimit}
-          onChange={(e) =>
-            onChange({ ...prefs, cacheLimit: Number(e.target.value) })
+          onValueChange={(value) =>
+            onChange({ ...prefs, cacheLimit: Number(value) })
           }
-        >
-          <option value={500}>每个文件夹保留 500 封</option>
-          <option value={2000}>每个文件夹保留 2000 封</option>
-          <option value={5000}>每个文件夹保留 5000 封</option>
-          <option value={0}>不限制</option>
-        </select>
+          options={[
+            { value: 500, label: t("每个文件夹保留 500 封") },
+            { value: 2000, label: t("每个文件夹保留 2000 封") },
+            { value: 5000, label: t("每个文件夹保留 5000 封") },
+            { value: 0, label: t("不限制") },
+          ]}
+        />
       </div>
       <div className="pref-row">
         <span role="status" className="pref-cache-stats">
-          已缓存 {cache.messages} 封 · 正文 {byteText(cache.headerBytes)} · 附件{" "}
-          {cache.attachments} 个 / {byteText(cache.attachmentBytes)}
+          {t("已缓存 {0} 封 · 正文 {1} · 附件 {2} 个 / {3}", {
+            0: cache.messages,
+            1: byteText(cache.headerBytes),
+            2: cache.attachments,
+            3: byteText(cache.attachmentBytes),
+          })}
         </span>
         <Button size="sm" variant="ghost" onClick={onTrim}>
-          立即清理
-        </Button>
-      </div>
-      <div className="pref-row">
-        <span>mailto 深链</span>
-        <Button size="sm" variant="ghost" onClick={onTestMailto}>
-          测试写信窗口
+          {t("立即清理")}
         </Button>
       </div>
       <p className="pref-note">
-        每个账号的每个文件夹按上限保留最新的邮件头与正文，附件一并清除；等待同步到服务器的操作不会被清理。把
-        My Mail 设为系统默认邮件阅读器后，点击网页里的 mailto
-        链接会直接打开写信窗口。仅当服务商不会自动保存 SMTP
-        副本时才需要开启「已发送」追加，否则会产生重复。
-        {pending > 0 ? ` 当前有 ${pending} 项操作等待同步到服务器。` : ""}
+        {t(
+          "按上限保留每个文件夹最新的邮件头与正文，附件一并清理；待同步操作不会被清理。",
+        )}
       </p>
+      <p className="pref-note" role="status">
+        {t("待同步操作：{0}", { 0: pending })}
+      </p>
+    </section>
+  );
+}
+
+function StorageDiagnostics({ database }: { database: string }) {
+  const [logPath, setLogPath] = useState("");
+  useEffect(() => {
+    let live = true;
+    api
+      .logPath()
+      .then((path) => {
+        if (live) setLogPath(path);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+  return (
+    <section className="settings-diagnostics">
+      <p className="pref-note">{t("凭证仅保存在系统钥匙串。")}</p>
+      <dl>
+        <dt>{t("数据库")}</dt>
+        <dd>{database || t("正在读取…")}</dd>
+        <dt>{t("诊断日志：")}</dt>
+        <dd>{logPath || t("正在读取…")}</dd>
+      </dl>
     </section>
   );
 }
@@ -1756,13 +2008,11 @@ async function testConnectionWithDeadline(
 function AccountForm({
   accounts,
   active,
-  database,
   onSelect,
   onAdded,
 }: {
   accounts: Account[];
   active?: string;
-  database: string;
   onSelect: (a: Account) => void;
   onAdded: (a: Account) => void;
 }) {
@@ -1770,13 +2020,7 @@ function AccountForm({
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [stage, setStage] = useState(""),
-    [logPath, setLogPath] = useState("");
-  useEffect(() => {
-    api
-      .logPath()
-      .then(setLogPath)
-      .catch(() => {});
-  }, []);
+    [adding, setAdding] = useState(accounts.length === 0);
   const patch = <K extends keyof AccountInput>(
     key: K,
     value: AccountInput[K],
@@ -1833,31 +2077,58 @@ function AccountForm({
       {accounts.length > 0 && (
         <div className="account-list">
           {accounts.map((a) => (
-            <button disabled={busy} key={a.id} onClick={() => onSelect(a)}>
+            <Button
+              variant="ghost"
+              disabled={busy}
+              key={a.id}
+              onClick={() => onSelect(a)}
+            >
               <Mail size={15} />
               <span>{a.email}</span>
               <small>
-                {a.id === active ? "当前账号" : a.demo ? "本地示例" : "切换"}
+                {a.id === active
+                  ? t("当前账号")
+                  : a.demo
+                    ? t("本地示例")
+                    : t("切换")}
               </small>
-            </button>
+            </Button>
           ))}
         </div>
       )}
-      <form onSubmit={(e) => void submit(e)}>
+      <Button
+        type="button"
+        variant="ghost"
+        disabled={busy}
+        aria-expanded={adding}
+        aria-controls="add-mail-account"
+        onClick={() => setAdding((value) => !value)}
+      >
+        <Plus size={14} />
+        {t("添加邮箱")}
+      </Button>
+      <form
+        id="add-mail-account"
+        hidden={!adding}
+        onSubmit={(e) => void submit(e)}
+      >
         <fieldset disabled={busy}>
-          <Field label="服务商" htmlFor="provider">
-            <select
+          <Field label={t("服务商")} htmlFor="provider">
+            <ChoiceSelect
               id="provider"
-              className="native-select"
-              onChange={(e) => preset(e.target.value)}
-            >
-              <option value="qq">QQ 邮箱</option>
-              <option value="163">163 邮箱</option>
-              <option value="gmail">Gmail（需应用密码）</option>
-              <option value="custom">自定义 IMAP / SMTP</option>
-            </select>
+
+              onValueChange={(value) => preset(value)}
+              defaultValue="qq"
+              disabled={busy}
+              options={[
+                { value: "qq", label: t("QQ 邮箱") },
+                { value: "163", label: t("163 邮箱") },
+                { value: "gmail", label: t("Gmail（需应用密码）") },
+                { value: "custom", label: t("自定义 IMAP / SMTP") },
+              ]}
+            />
           </Field>
-          <Field label="邮箱地址" htmlFor="email">
+          <Field label={t("邮箱地址")} htmlFor="email">
             <Input
               id="email"
               type="email"
@@ -1869,9 +2140,11 @@ function AccountForm({
             />
           </Field>
           <Field
-            label="授权码 / 应用密码"
+            label={t("授权码 / 应用密码")}
             htmlFor="password"
-            hint="先在服务商网页开启 IMAP。Outlook 需 OAuth2，此原型暂不支持。"
+            hint={t(
+              "先在服务商网页开启 IMAP。Outlook 需 OAuth2，此原型暂不支持。",
+            )}
           >
             <Input
               id="password"
@@ -1886,7 +2159,7 @@ function AccountForm({
             {(["imap", "smtp"] as const).map((kind) => (
               <div className="server-card" key={kind}>
                 <b>{kind.toUpperCase()}</b>
-                <Field label="服务器" htmlFor={kind + "host"}>
+                <Field label={t("服务器")} htmlFor={kind + "host"}>
                   <Input
                     id={kind + "host"}
                     required
@@ -1900,7 +2173,7 @@ function AccountForm({
                   />
                 </Field>
                 <div className="server-options">
-                  <Field label="端口" htmlFor={kind + "port"}>
+                  <Field label={t("端口")} htmlFor={kind + "port"}>
                     <Input
                       id={kind + "port"}
                       type="number"
@@ -1916,21 +2189,20 @@ function AccountForm({
                       }
                     />
                   </Field>
-                  <Field label="加密" htmlFor={kind + "tls"}>
-                    <select
+                  <Field label={t("加密")} htmlFor={kind + "tls"}>
+                    <ChoiceSelect
                       id={kind + "tls"}
-                      className="native-select"
+
                       value={kind === "imap" ? form.imapTLS : form.smtpTLS}
-                      onChange={(e) =>
-                        patch(
-                          kind === "imap" ? "imapTLS" : "smtpTLS",
-                          e.target.value,
-                        )
+                      onValueChange={(value) =>
+                        patch(kind === "imap" ? "imapTLS" : "smtpTLS", value)
                       }
-                    >
-                      <option value="tls">TLS</option>
-                      <option value="starttls">STARTTLS</option>
-                    </select>
+                      disabled={busy}
+                      options={[
+                        { value: "tls", label: "TLS" },
+                        { value: "starttls", label: "STARTTLS" },
+                      ]}
+                    />
                   </Field>
                 </div>
               </div>
@@ -1939,7 +2211,7 @@ function AccountForm({
         </fieldset>
         {error && (
           <p role="alert" className="form-error">
-            {error}
+            {t(error)}
           </p>
         )}
         <Button type="submit" variant="primary" disabled={busy}>
@@ -1948,21 +2220,14 @@ function AccountForm({
           ) : (
             <ShieldCheck size={14} />
           )}{" "}
-          {busy ? "处理中…" : "测试连接并保存"}
+          {busy ? t("处理中…") : t("测试连接并保存")}
         </Button>
         {stage && (
           <p className="storage-path" role="status">
-            {stage}
+            {t(stage)}
           </p>
         )}
       </form>
-      <p className="storage-path">
-        凭证保存到系统钥匙串。数据库：
-        <br />
-        {database}
-        <br />
-        诊断日志：{logPath || "正在读取…"}
-      </p>
     </div>
   );
 }
@@ -1983,6 +2248,7 @@ function quoteFrameHeight(quote: ComposeQuote) {
 function Compose({
   open,
   account,
+  accounts,
   seed,
   fresh,
   draftKey,
@@ -1993,6 +2259,7 @@ function Compose({
 }: {
   open: boolean;
   account: Account;
+  accounts: Account[];
   seed?: ComposeSeed | null;
   /** “写邮件”: start blank instead of restoring the stored draft. */
   fresh?: boolean;
@@ -2028,8 +2295,17 @@ function Compose({
   const formId = useId();
   const form = useRef<HTMLFormElement>(null);
   const sending = useRef(false);
+  const sendingAccount = accounts.find(
+    (a) => a.id === (draft.senderAccountId || draft.accountId),
+  );
   const canSend =
-    open && ready && !busy && !picking && !!draft.to.trim() && !account.demo;
+    open &&
+    ready &&
+    !busy &&
+    !picking &&
+    !!draft.to.trim() &&
+    !!sendingAccount &&
+    !sendingAccount.demo;
   const queue = useRef(Promise.resolve()),
     // Nothing is written to the stored draft until the reader actually types:
     // peeking at a reply and closing it must not overwrite what is saved.
@@ -2239,9 +2515,17 @@ function Compose({
         if (!v) void close();
       }}
       title={
-        quote ? (quote.kind === "forward" ? "转发邮件" : "回复邮件") : "新邮件"
+        quote
+          ? quote.kind === "forward"
+            ? t("转发邮件")
+            : t("回复邮件")
+          : t("新邮件")
       }
-      description={"从 " + account.email + " 发送纯文本邮件"}
+      description={
+        t("从 ") +
+        (sendingAccount?.email ?? account.email) +
+        t(" 发送纯文本邮件")
+      }
       size="lg"
       dismissOnOverlay={false}
       onKeyDown={(event) => {
@@ -2259,14 +2543,32 @@ function Compose({
       }}
       footer={
         <>
-          <span className="compose-from" title={account.email}>
-            发件人：{account.email}
-          </span>
+          <label className="compose-from" htmlFor="compose-sender">
+            {t("发件人：")}
+            <ChoiceSelect
+              id="compose-sender"
+              value={draft.senderAccountId || draft.accountId}
+              disabled={!ready || busy || picking}
+              options={accounts.map((a) => ({
+                value: a.id,
+                label: a.email,
+                disabled: a.demo,
+              }))}
+              onValueChange={(value) => {
+                touched.current = true;
+                persist({
+                  ...draft,
+                  senderAccountId: value,
+                  body: composeBody(content, quote),
+                });
+              }}
+            />
+          </label>
           <span className="draft-status" role="status">
-            {status}
+            {t(status)}
           </span>
           <Button disabled={busy} onClick={() => void close()}>
-            保存并关闭
+            {t("保存并关闭")}
           </Button>
           <Button
             variant="primary"
@@ -2274,10 +2576,10 @@ function Compose({
             type="submit"
             form={formId}
             aria-keyshortcuts="Meta+Enter Control+Enter"
-            title="发送邮件（⌘/Ctrl + Enter）"
+            title={t("发送邮件（⌘/Ctrl + Enter）")}
           >
             <Send size={14} />
-            {busy ? "正在发送…" : "发送邮件"}
+            {busy ? t("正在发送…") : t("发送邮件")}
           </Button>
         </>
       }
@@ -2305,53 +2607,57 @@ function Compose({
           <div className="draft-restore">
             <FileText size={13} />
             <span>
-              本机还存着一份草稿
+              {t("本机还存着一份草稿")}
               {kept.subject.trim() ? `（${kept.subject.trim()}）` : ""}
             </span>
-            <button type="button" onClick={restoreKept}>
-              继续编辑
-            </button>
+            <Button
+              size="sm"
+              variant="ghost"
+              type="button"
+              onClick={restoreKept}
+            >
+              {t("继续编辑")}
+            </Button>
           </div>
         )}
         <div className="recipient-group">
           <div className="recipient-row">
-            <label htmlFor="compose-to">收件人</label>
+            <label htmlFor="compose-to">{t("收件人")}</label>
             <ChipInput
               id="compose-to"
               value={draft.to}
               disabled={!ready || busy}
-              placeholder="输入邮箱后回车，可添加多个"
+              placeholder={t("输入邮箱后回车，可添加多个")}
               onChange={(value) => change("to", value)}
             />
           </div>
           <div className="recipient-row">
-            <label htmlFor="compose-cc">抄送</label>
+            <label htmlFor="compose-cc">{t("抄送")}</label>
             <ChipInput
               id="compose-cc"
               value={draft.cc}
               disabled={!ready || busy}
-              placeholder="可选"
+              placeholder={t("可选")}
               onChange={(value) => change("cc", value)}
             />
           </div>
           <div className="recipient-row">
-            <label htmlFor="compose-bcc">密送</label>
+            <label htmlFor="compose-bcc">{t("密送")}</label>
             <ChipInput
               id="compose-bcc"
               value={draft.bcc ?? ""}
               disabled={!ready || busy}
-              placeholder="可选，不会显示给其他收件人"
+              placeholder={t("可选，不会显示给其他收件人")}
               onChange={(value) => change("bcc", value)}
             />
           </div>
           <div className="recipient-row">
-            <label htmlFor="compose-subject">主题</label>
-            <input
+            <label htmlFor="compose-subject">{t("主题")}</label>
+            <Input
               id="compose-subject"
-              className="recipient-input"
               disabled={!ready || busy}
               value={draft.subject}
-              placeholder="邮件主题"
+              placeholder={t("邮件主题")}
               onChange={(e) => change("subject", e.target.value)}
             />
           </div>
@@ -2365,9 +2671,9 @@ function Compose({
               onClick={() => void addAttachments()}
             >
               <Paperclip size={14} />
-              {picking ? "正在选择…" : "添加附件"}
+              {picking ? t("正在选择…") : t("添加附件")}
             </Button>
-            <small>单个不超过 10 MB，合计不超过 25 MB</small>
+            <small>{t("单个不超过 10 MB，合计不超过 25 MB")}</small>
           </div>
           {(draft.attachments ?? []).length > 0 && (
             <ul className="compose-attachment-list">
@@ -2378,9 +2684,10 @@ function Compose({
                     {file.name}
                   </span>
                   <span className="attachment-size">{fileSize(file.size)}</span>
-                  <button
+                  <IconButton
+                    size="xs"
                     type="button"
-                    aria-label={"移除 " + file.name}
+                    label={t("移除 ") + file.name}
                     disabled={busy}
                     onClick={() =>
                       setAttachments(
@@ -2391,14 +2698,14 @@ function Compose({
                     }
                   >
                     <X size={13} />
-                  </button>
+                  </IconButton>
                 </li>
               ))}
             </ul>
           )}
         </div>
         <Field
-          label={quote?.kind === "reply" ? "回复内容" : "正文"}
+          label={quote?.kind === "reply" ? t("回复内容") : t("正文")}
           htmlFor="compose-body"
         >
           <Textarea
@@ -2407,7 +2714,9 @@ function Compose({
             rows={quote ? 6 : 12}
             value={content}
             placeholder={
-              quote?.kind === "reply" ? "在此输入回复内容…" : "写下你想说的…"
+              quote?.kind === "reply"
+                ? t("在此输入回复内容…")
+                : t("写下你想说的…")
             }
             onChange={(e) => change("body", e.target.value)}
           />
@@ -2430,7 +2739,9 @@ function Compose({
                   </span>
                   <p className="quote-line">
                     <strong>{senderName(quote.from)}</strong>
-                    <span>{quote.date} 写道：</span>
+                    <span>
+                      {quote.date} {t("写道：")}
+                    </span>
                     {addressOf(quote.from) !== senderName(quote.from) && (
                       <small>{addressOf(quote.from)}</small>
                     )}
@@ -2439,42 +2750,44 @@ function Compose({
               ) : (
                 <div className="quote-meta">
                   <p className="quote-line">
-                    <strong>转发的原邮件</strong>
+                    <strong>{t("转发的原邮件")}</strong>
                   </p>
                   <dl className="quote-fields">
                     <div>
-                      <dt>发件人</dt>
+                      <dt>{t("发件人")}</dt>
                       <dd>{quote.from}</dd>
                     </div>
                     <div>
-                      <dt>时间</dt>
+                      <dt>{t("时间")}</dt>
                       <dd>{quote.date}</dd>
                     </div>
                     <div>
-                      <dt>收件人</dt>
-                      <dd>{quote.to || "（未知）"}</dd>
+                      <dt>{t("收件人")}</dt>
+                      <dd>{quote.to || t("（未知）")}</dd>
                     </div>
                     <div>
-                      <dt>主题</dt>
-                      <dd>{quote.subject || "（无主题）"}</dd>
+                      <dt>{t("主题")}</dt>
+                      <dd>{quote.subject || t("（无主题）")}</dd>
                     </div>
                   </dl>
                 </div>
               )}
-              <button
+              <Button
+                size="sm"
+                variant="ghost"
                 type="button"
                 className="quote-toggle"
                 aria-expanded={quoteOpen}
                 onClick={() => setQuoteOpen((value) => !value)}
               >
-                {quoteOpen ? "收起引用" : "展开引用"}
-              </button>
+                {quoteOpen ? t("收起引用") : t("展开引用")}
+              </Button>
             </header>
             {quoteOpen && (
               <div className="quote-body">
                 {quote.html ? (
                   <iframe
-                    title="引用的原邮件"
+                    title={t("引用的原邮件")}
                     sandbox=""
                     referrerPolicy="no-referrer"
                     style={{ height: quoteFrameHeight(quote) }}
@@ -2491,21 +2804,23 @@ function Compose({
               </div>
             )}
             <footer className="quote-foot">
-              <span>引用只读，其中的远程图片不加载</span>
+              <span>{t("引用只读，其中的远程图片不加载")}</span>
               <span>
                 {quote.kind === "reply"
-                  ? "发送时按纯文本引用，每行加 > 前缀"
-                  : "发送时保留上方的邮件信息"}
+                  ? t("发送时按纯文本引用，每行加 > 前缀")
+                  : t("发送时保留上方的邮件信息")}
               </span>
             </footer>
           </section>
         )}
         {error && (
           <p role="alert" className="form-error">
-            {error}
+            {t(error)}
           </p>
         )}
-        <small>纯文本写信 · 草稿自动保存到本机 · 附件在发送时由本机读取</small>
+        <small>
+          {t("纯文本写信 · 草稿自动保存到本机 · 附件在发送时由本机读取")}
+        </small>
       </form>
     </Modal>
   );

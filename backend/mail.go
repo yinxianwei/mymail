@@ -627,9 +627,9 @@ func (s *MailService) DownloadAttachment(ctx context.Context, id string, index i
 	}
 	path, err = mygo.Dialog.Save(mygo.SaveDialogOptions{
 		Parent:      mygo.CallerWindow(ctx),
-		Title:       "保存附件",
+		Title:       s.nativeText("保存附件", "Save attachment"),
 		DefaultPath: defaultPath,
-		ButtonLabel: "保存",
+		ButtonLabel: s.nativeText("保存", "Save"),
 	})
 	if err != nil {
 		return "", errors.New("无法打开保存对话框")
@@ -840,8 +840,8 @@ func readComposeAttachments(list []DraftAttachment) ([]bodyPart, error) {
 func (s *MailService) PickAttachments(ctx context.Context) ([]DraftAttachment, error) {
 	paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{
 		Parent:      mygo.CallerWindow(ctx),
-		Title:       "添加附件",
-		ButtonLabel: "添加",
+		Title:       s.nativeText("添加附件", "Add attachments"),
+		ButtonLabel: s.nativeText("添加", "Add"),
 		Multiple:    true,
 	})
 	if err != nil {
@@ -868,7 +868,11 @@ func (s *MailService) Send(d Draft) (result string, err error) {
 		return "", errors.New("已有邮件正在发送，请稍候")
 	}
 	defer s.sending.Unlock()
-	a, p, err := s.credentials(d.AccountID)
+	senderID := d.SenderAccountID
+	if senderID == "" {
+		senderID = d.AccountID
+	}
+	a, p, err := s.credentials(senderID)
 	if err != nil {
 		return "", err
 	}
@@ -902,7 +906,7 @@ func (s *MailService) Send(d Draft) (result string, err error) {
 	if err != nil {
 		return "邮件已发送，但本地发送记录写入失败；请勿重复发送。", nil
 	}
-	if err = s.ClearDraft(a.ID, d.Key); err != nil {
+	if err = s.ClearDraft(d.AccountID, d.Key); err != nil {
 		return "邮件已发送，但本地草稿清理失败；请勿重复发送。" + note, nil
 	}
 	return "邮件已通过 SMTP 发送，本地发送记录已保存" + note + "。", nil

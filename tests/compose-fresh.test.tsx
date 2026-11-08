@@ -31,6 +31,9 @@ test("写邮件 opens a blank message instead of the stored reply draft", async 
     getComputedStyle: window.getComputedStyle.bind(window),
     MutationObserver: window.MutationObserver,
     HTMLElement: window.HTMLElement,
+    HTMLFormElement: window.HTMLFormElement,
+    DocumentFragment: window.DocumentFragment,
+    HTMLSelectElement: window.HTMLSelectElement,
     HTMLInputElement: window.HTMLInputElement,
     Node: window.Node,
     NodeFilter: window.NodeFilter,
@@ -96,7 +99,13 @@ test("写邮件 opens a blank message instead of the stored reply draft", async 
   const sent: Draft[] = [];
   let rejectSend: ((error: Error) => void) | undefined;
   Object.assign(api, {
-    state: async () => ({ accounts: [account], database: "test.db" }),
+    state: async () => ({
+      accounts: [
+        account,
+        { ...account, id: "second", email: "second@example.invalid" },
+      ],
+      database: "test.db",
+    }),
     desktopState: async () => state,
     takeMailTarget: async () => ({ accountId: "", uid: 0, validity: 0 }),
     folders: async () => [
@@ -177,6 +186,30 @@ test("写邮件 opens a blank message instead of the stored reply draft", async 
       document.querySelector(".quote-card .quote-text")?.textContent,
     ).toContain("正文");
     expect(document.querySelector(".draft-restore")).toBeNull();
+    Object.assign(window.HTMLElement.prototype, { scrollIntoView() {} });
+    await act(async () => {
+      document
+        .querySelector("#compose-sender")!
+        .dispatchEvent(
+          new window.KeyboardEvent("keydown", {
+            key: "ArrowDown",
+            bubbles: true,
+          }),
+        );
+    });
+    await act(async () => {
+      const option = [
+        ...document.querySelectorAll<HTMLElement>('[role="option"]'),
+      ].find((n) => n.textContent?.includes("second@example.invalid"))!;
+      option.dispatchEvent(
+        new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+    });
+    expect(saves.at(-1)?.senderAccountId).toBe("second");
+    expect(saves.at(-1)?.accountId).toBe(account.id);
+    expect(field<HTMLInputElement>("compose-subject")!.value).toBe(
+      "Re: 季度复盘",
+    );
     const body = field<HTMLTextAreaElement>("compose-body")!;
     expect(body.closest("form")).not.toBeNull();
     await act(async () => body.focus());
@@ -200,6 +233,7 @@ test("写邮件 opens a blank message instead of the stored reply draft", async 
       await new Promise((resolve) => setTimeout(resolve, 10));
     });
     expect(sent).toHaveLength(1);
+    expect(sent[0].senderAccountId).toBe("second");
     expect(sent[0].body).toContain("收到，我下午看一下。");
     await act(async () => {
       rejectSend!(new Error("模拟发送失败"));

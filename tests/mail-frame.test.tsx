@@ -15,6 +15,9 @@ function setup() {
     DOMParser: window.DOMParser,
     IS_REACT_ACT_ENVIRONMENT: true,
     HTMLElement: window.HTMLElement,
+    HTMLFormElement: window.HTMLFormElement,
+    DocumentFragment: window.DocumentFragment,
+    HTMLSelectElement: window.HTMLSelectElement,
     Element: window.Element,
     Node: window.Node,
     Event: window.Event,
@@ -83,11 +86,14 @@ test("the frame takes the height its document reports", async () => {
   const { opened, frame, post } = await renderFrame(window);
   await post({ "mail:height": 1234 });
   expect(frame.style.height).toBe("1234px");
+  await post({ "mail:height": 48000 });
+  expect(frame.style.height).toBe("48000px");
+  expect(frame.getAttribute("scrolling")).toBe("no");
   // A runaway layout must not stretch the reader forever.
-  await post({ "mail:height": 999999 });
-  expect(frame.style.height).toBe("20000px");
+  await post({ "mail:height": 9999999 });
+  expect(frame.style.height).toBe("1000000px");
   await post({ "mail:height": "nonsense" });
-  expect(frame.style.height).toBe("20000px");
+  expect(frame.style.height).toBe("1000000px");
   // A height report is not a link click.
   expect(opened).toEqual([]);
 });

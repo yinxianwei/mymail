@@ -126,10 +126,10 @@ func startDesktop(ctx context.Context, s *MailService, window *mygo.Window, focu
 	lastCount.Store(-1)
 	makeMenu := func(state DesktopState) *mygo.Menu {
 		return mygo.NewMenu([]*mygo.MenuItem{
-			{Label: fmt.Sprintf("收件箱未读：%d 封", state.Unread), Disabled: true},
-			{Label: "打开邮箱", Click: func(*mygo.MenuItem, *mygo.Window) { focus() }},
-			{Label: "立即检查新邮件", Disabled: state.Checking, Click: func(*mygo.MenuItem, *mygo.Window) { s.requestMailCheck() }},
-			{Label: "新邮件通知", Type: mygo.MenuItemCheckbox, Checked: state.Notifications, Click: func(item *mygo.MenuItem, _ *mygo.Window) {
+			{Label: fmt.Sprintf(s.nativeText("收件箱未读：%d 封", "Unread inbox messages: %d"), state.Unread), Disabled: true},
+			{Label: s.nativeText("打开邮箱", "Open mailbox"), Click: func(*mygo.MenuItem, *mygo.Window) { focus() }},
+			{Label: s.nativeText("立即检查新邮件", "Check for new mail"), Disabled: state.Checking, Click: func(*mygo.MenuItem, *mygo.Window) { s.requestMailCheck() }},
+			{Label: s.nativeText("新邮件通知", "New mail notifications"), Type: mygo.MenuItemCheckbox, Checked: state.Notifications, Click: func(item *mygo.MenuItem, _ *mygo.Window) {
 				enabled := item.Checked
 				go func() {
 					if _, err := s.SetNotifications(enabled); err != nil {
@@ -137,7 +137,7 @@ func startDesktop(ctx context.Context, s *MailService, window *mygo.Window, focu
 					}
 				}()
 			}},
-			mygo.Separator(), {Label: "退出 My Mail", Click: func(*mygo.MenuItem, *mygo.Window) { mygo.App.Quit() }},
+			mygo.Separator(), {Label: s.nativeText("退出 My Mail", "Quit My Mail"), Click: func(*mygo.MenuItem, *mygo.Window) { mygo.App.Quit() }},
 		})
 	}
 	var err error
@@ -165,9 +165,9 @@ func startDesktop(ctx context.Context, s *MailService, window *mygo.Window, focu
 						_ = tray.SetIcon(trayImage(state.Unread), true)
 					}
 				}
-				tip := fmt.Sprintf("My Mail · 收件箱未读 %d 封", state.Unread)
+				tip := fmt.Sprintf(s.nativeText("My Mail · 收件箱未读 %d 封", "My Mail · %d unread messages"), state.Unread)
 				if state.LastError != "" {
-					tip += "（部分账号待更新）"
+					tip += s.nativeText("（部分账号待更新）", " (some accounts need updating)")
 				}
 				tray.SetToolTip(tip)
 				tray.SetMenu(makeMenu(state))
@@ -193,10 +193,13 @@ func startDesktop(ctx context.Context, s *MailService, window *mygo.Window, focu
 			s.setNotificationStatus("unsupported")
 			return errors.New("当前桌面环境不支持系统通知")
 		}
-		opts := mygo.NotificationOptions{Title: "My Mail", Body: fmt.Sprintf("收件箱收到 %d 封新邮件", notice.Count), ID: notificationID(notice.Target), Group: notice.Target.AccountID}
+		opts := mygo.NotificationOptions{Title: "My Mail", Body: fmt.Sprintf(s.nativeText("收件箱收到 %d 封新邮件", "%d new inbox messages"), notice.Count), ID: notificationID(notice.Target), Group: notice.Target.AccountID}
+		if notice.Count == 1 && s.GetLanguage().Locale == "en" {
+			opts.Body = "1 new inbox message"
+		}
 		if test {
 			opts.ID = "notification-test"
-			opts.Body = "这是一条测试通知。点击可打开邮箱。"
+			opts.Body = s.nativeText("这是一条测试通知。点击可打开邮箱。", "This is a test notification. Click to open your mailbox.")
 		}
 		if test {
 			select {

@@ -25,7 +25,7 @@ export default defineConfig(({ command }) => ({
   ],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   server: {
-    port: 5173,
+    port: Number(process.env.MYMAIL_DEV_PORT || 5173),
     strictPort: true,
     // DMG staging contains an Applications symlink; never watch build output.
     watch: { ignored: ["**/build/**", "**/dist/**"] },

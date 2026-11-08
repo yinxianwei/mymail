@@ -72,6 +72,17 @@ docs/           User/development guides, roadmap and release notes
 Mail, credentials and persistence remain in Go. The frontend should use the
 generated client rather than create another storage/network path.
 
+## Interface languages
+
+Settings offers System default, English and 简体中文. The preference is saved in
+SQLite metadata and cached as an interface preference by the frontend. MyGo
+receives the same language for native menus, notifications and file dialogs.
+Use `t()` from `src/lib/i18n.ts` for interface messages and add the English
+entry in `src/locales/`. Translation tests check coverage and interpolation
+placeholders. Keep mail content, addresses, attachment filenames and custom
+folder IDs/titles out of translation calls. Unknown technical diagnostics keep
+their original text.
+
 ## Diagnostics
 
 Account setup tests IMAP, SMTP and credential storage in separate stages. Each
@@ -96,3 +107,5 @@ Local IMAP/SMTP test servers and synthetic messages are deliberately used by
 automated tests. They verify behavior, not compatibility with QQ, Gmail,
 Outlook or another production service. Historical investigation and validation
 notes remain in [技术选型与原型验收](技术选型与原型验收.md).
+
+开发端口冲突时，可使用 `MYMAIL_DEV_PORT=5186 bun run dev` 同步调整桌面加载地址与 Vite 端口。

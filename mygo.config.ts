@@ -42,7 +42,7 @@ export default defineConfig({
   main: "./backend",
   // `mygo dev` runs devCommand and loads devUrl; `mygo build` runs
   // buildCommand and embeds frontendDist into the app.
-  devUrl: "http://localhost:5173",
+  devUrl: `http://localhost:${process.env.MYMAIL_DEV_PORT || "5173"}`,
   devCommand: "bun run dev:web",
   buildCommand: "bun run build:web && bun run licenses",
   frontendDist: "dist",

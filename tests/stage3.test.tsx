@@ -55,8 +55,10 @@ function bootstrap() {
     getComputedStyle: window.getComputedStyle.bind(window),
     MutationObserver: window.MutationObserver,
     HTMLElement: window.HTMLElement,
-    HTMLInputElement: window.HTMLInputElement,
+    HTMLFormElement: window.HTMLFormElement,
+    DocumentFragment: window.DocumentFragment,
     HTMLSelectElement: window.HTMLSelectElement,
+    HTMLInputElement: window.HTMLInputElement,
     HTMLTextAreaElement: window.HTMLTextAreaElement,
     Node: window.Node,
     NodeFilter: window.NodeFilter,
@@ -167,21 +169,43 @@ test("缓存上限与 mailto 深链接入设置页和写信窗口", async () => 
 
     // Preferences: cap, live stats, manual trim and the mailto test entry.
     await act(async () => button("账号设置").click());
-    expect(document.querySelector("#pref-cache")).not.toBeNull();
+    const settingsTab = async (label: string) =>
+      act(async () => {
+        const tab = [
+          ...document.querySelectorAll<HTMLElement>('[role="tab"]'),
+        ].find((n) => n.textContent?.trim() === label)!;
+        tab.dispatchEvent(
+          new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+        );
+      });
+    await settingsTab("存储与诊断");
+    expect(
+      document.querySelector('[role="tabpanel"]:not([hidden]) #pref-cache'),
+    ).not.toBeNull();
     await act(async () => {});
     expect(document.body.textContent).toContain("已缓存 42 封");
     await act(async () => button("立即清理").click());
     expect(calls).toContain("trimCache");
+    await settingsTab("通用");
     await act(async () => button("测试写信窗口").click());
+    await settingsTab("存储与诊断");
     expect(calls).toContain("openMailto");
-    const select = document.querySelector<HTMLSelectElement>("#pref-cache")!;
-    const setter = Object.getOwnPropertyDescriptor(
-      window.HTMLSelectElement.prototype,
-      "value",
-    )!.set!;
+    Object.assign(window.HTMLElement.prototype, { scrollIntoView() {} });
     await act(async () => {
-      setter.call(select, "500");
-      select.dispatchEvent(new window.Event("change", { bubbles: true }));
+      document.querySelector("#pref-cache")!.dispatchEvent(
+        new window.KeyboardEvent("keydown", {
+          key: "ArrowDown",
+          bubbles: true,
+        }),
+      );
+    });
+    await act(async () => {
+      const option = [
+        ...document.querySelectorAll<HTMLElement>('[role="option"]'),
+      ].find((n) => n.textContent?.includes("每个文件夹保留 500 封"))!;
+      option.dispatchEvent(
+        new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
     });
     expect(calls).toContain("setSettings:500");
     await act(async () => {

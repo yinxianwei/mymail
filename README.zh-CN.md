@@ -1,6 +1,6 @@
 <p align="center"><img src="design/logo/logo.svg" width="88" alt="My Mail 标志"></p>
 <h1 align="center">My Mail</h1>
-<p align="center">用 Go 和 React 构建的本地优先桌面邮箱。<br>多个收件箱，离线阅读，连接你自己的 IMAP 邮箱。</p>
+<p align="center">基于 MyGo 和 React 的轻量、本地优先桌面邮箱。<br>多个收件箱，离线阅读，连接你自己的 IMAP 邮箱。</p>
 <p align="center">
   <a href="https://github.com/yinxianwei/mymail/actions/workflows/ci.yml"><img src="https://github.com/yinxianwei/mymail/actions/workflows/ci.yml/badge.svg" alt="自动检查"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT 协议"></a>
@@ -27,8 +27,11 @@
 
 - **多个邮箱，一个收件箱。** 汇总查看或按账号阅读，常用系统文件夹固定排序，自定义目录支持层级展开。
 - **离线阅读与历史加载。** 正文按需缓存，向下滚动每次加载更早的 50 封邮件头，列表使用虚拟滚动。
+- **邮件筛选。** 按未读、星标或已缓存附件信息筛选，可叠加主题、发件人、收件人和附件名关键词，仅查询当前已缓存的列表。
 - **日常邮件管理。** 回复、回复全部、转发、星标、已读/未读、移动和删除；管理操作先保存在本机，再排队同步到 IMAP。
 - **写到一半也能继续。** 每封信独立保存本地草稿，支持收件人、抄送、密送、附件和 ⌘/Ctrl + Enter 发送。目前是纯文本写信，附带转义的 HTML 版本，尚无富文本编辑器。
+- **附件预览。** 本地查看图片、可翻页的 PDF 与文本文件；点击文件名即可下载，已缓存附件离线也可使用。
+- **本地草稿管理。** 统一查看各账号的未完成草稿，回到所属邮箱继续编辑，或确认删除；与服务器草稿分开处理。
 - **菜单栏与新邮件通知。** 显示未读数，支持 IMAP IDLE 与轮询兜底，系统通知只显示数量。
 - **桌面体验。** 深浅主题、键盘操作、`mailto:` 链接和可设置的缓存上限。
 
@@ -41,7 +44,7 @@
 
 ## 下载体验
 
-**当前为早期预览版，界面为中文，已验证环境是 macOS Apple Silicon。** Windows、Linux 和 Intel Mac 的桌面发行尚未验证。尚未实现 OAuth2，不能把 Outlook / Gmail OAuth 登录列为已支持；服务商兼容性仍在收集，本地协议测试不等于真实邮箱验收。
+**当前为早期预览版，支持中英文界面，已验证环境是 macOS Apple Silicon。** Windows、Linux 和 Intel Mac 的桌面发行尚未验证。尚未实现 OAuth2，不能把 Outlook / Gmail OAuth 登录列为已支持；服务商兼容性仍在收集，本地协议测试不等于真实邮箱验收。
 
 1. 到 [Releases](https://github.com/yinxianwei/mymail/releases) 下载已发布的 macOS arm64 DMG；首次发行前可从源码运行。
 2. 打开 DMG，将 **My Mail** 拖入“应用程序”。
@@ -69,6 +72,8 @@ bun run build         # 桌面应用与 DMG，附带依赖许可证
 ```
 
 产物位于 `build/darwin-arm64/`。开发与日志排查见[开发指南](docs/DEVELOPMENT.md)，完整功能细节见[使用指南](docs/user-guide.zh-CN.md)。
+
+在“账号设置 → 语言”中选择“跟随系统 / 简体中文 / English”，立即生效并在下次启动时保留。邮件原文与自定义文件夹名称保持原样。
 
 ## 数据与安全
 

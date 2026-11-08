@@ -7,7 +7,7 @@ They are ready to use after the repository and first preview actually exist.
 
 **Description**
 
-> A local-first desktop email client built with Go and React. Unified inbox, offline reading, and direct IMAP/SMTP connections.
+> A lightweight, local-first desktop email client built with MyGo and React. Native WebView, unified inbox, and offline reading.
 
 **Website**
 
@@ -27,7 +27,7 @@ Do not use screenshots of real accounts, messages or credential prompts.
 
 > 我开源了 My Mail：一个用 Go + React 做的本地优先桌面邮箱，界面运行在系统 WebView 中，不捆绑 Chromium，也不用注册项目账号。
 >
-> 现在可以连接 IMAP / SMTP，汇总多个收件箱，离线阅读已缓存邮件，回复转发、保存草稿、收发附件，并在菜单栏查看未读数。当前是中文界面的早期预览版，已验证环境为 Apple 芯片 Mac，OAuth2 和其他平台还在路线图中。
+> 现在可以连接 IMAP / SMTP，汇总多个收件箱，离线阅读已缓存邮件，回复转发、保存草稿、收发附件，并在菜单栏查看未读数。当前是支持中英文界面的早期预览版，已验证环境为 Apple 芯片 Mac，OAuth2 和其他平台还在路线图中。
 >
 > 仓库：https://github.com/yinxianwei/mymail
 >
@@ -39,8 +39,8 @@ Do not use screenshots of real accounts, messages or credential prompts.
 > system WebView. It connects directly to IMAP/SMTP providers, with a unified
 > inbox, cached offline reading, local drafts, attachments and menu bar unread counts.
 >
-> It's an early preview for Apple Silicon Macs with a Chinese UI. OAuth2,
-> localization and other desktop platforms are still on the roadmap. I'd love
+> It's an early preview for Apple Silicon Macs with English and Chinese UI. OAuth2 and
+> other desktop platforms are still on the roadmap. I'd love
 > reproducible bug reports and provider compatibility feedback.
 >
 > Source: https://github.com/yinxianwei/mymail

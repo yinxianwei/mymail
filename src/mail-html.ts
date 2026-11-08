@@ -47,9 +47,10 @@ const linkBridge = (nonce: string) => `<script nonce="${nonce}">
   // whole reader scrolls as one instead of nesting a scrollbar in here.
   var last = 0;
   function measure() {
-    var root = document.documentElement;
+    var body = document.body;
+    var scale = Number(body.style.zoom) || 1;
     var height = Math.ceil(
-      Math.max(root.scrollHeight, document.body.getBoundingClientRect().height)
+      Math.max(body.scrollHeight * scale, body.getBoundingClientRect().height)
     );
     if (!height || Math.abs(height - last) < 2) return;
     last = height;
@@ -58,6 +59,16 @@ const linkBridge = (nonce: string) => `<script nonce="${nonce}">
   // Mail layouts are often a fixed 800px wide. Rather than let the frame grow a
   // horizontal scrollbar, shrink the body just enough to fit.
   function fit() {
+    // Sender templates sometimes include their own fixed-height scroll panel.
+    // Expand only those panels; preserve the rest of the email's layout.
+    Array.prototype.forEach.call(document.body.querySelectorAll("*"), function (element) {
+      var style = getComputedStyle(element);
+      if (/(auto|scroll)/.test(style.overflowY)) {
+        element.style.setProperty("overflow-y", "visible", "important");
+        element.style.setProperty("height", "auto", "important");
+        element.style.setProperty("max-height", "none", "important");
+      }
+    });
     var root = document.documentElement;
     document.body.style.zoom = "";
     var want = Math.max(root.scrollWidth, document.body.scrollWidth);
@@ -68,6 +79,7 @@ const linkBridge = (nonce: string) => `<script nonce="${nonce}">
     }
     measure();
   }
+  document.addEventListener("load", fit, true);
   window.addEventListener("load", fit);
   window.addEventListener("resize", fit);
   if (window.ResizeObserver) new ResizeObserver(measure).observe(document.body);
@@ -390,7 +402,12 @@ export function mailDocument(html: string, options: MailRenderOptions) {
   // borders, padded tables, indented quotes and underlined links are what make
   // an unstyled message readable, and exactly what fights a designed one.
   const plain = `h1,h2,h3{line-height:1.4;${compact ? "font-size:15px;" : ""}}table{max-width:100%;border-collapse:collapse}td,th{border:1px solid GrayText;padding:${compact ? "5px 7px" : "8px"}}blockquote{border-left:2px solid GrayText;margin-left:0;${quote}}a{text-decoration:underline}`;
+  // The sender's CSS comes first: even !important body overflow must not
+  // recreate a scrollport inside the reader. Padding stays inside the box.
+  const noScroll = linkable
+    ? "html,body{overflow:hidden!important;height:auto!important;min-height:0!important;max-height:none!important}body{margin:0!important;display:flow-root;box-sizing:border-box}"
+    : "";
   const base = shared + (rich ? "" : plain);
   const script = nonce ? linkBridge(nonce) : "";
-  return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none';${imagePolicy}${scriptPolicy} style-src 'unsafe-inline'; base-uri 'none'; form-action 'none';"><meta name="referrer" content="no-referrer"><style>${base}</style>${css ? `<style>${css}</style>` : ""}</head><body>${body}${script}</body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none';${imagePolicy}${scriptPolicy} style-src 'unsafe-inline'; base-uri 'none'; form-action 'none';"><meta name="referrer" content="no-referrer"><style>${base}</style>${css ? `<style>${css}</style>` : ""}<style>${noScroll}</style></head><body>${body}${script}</body></html>`;
 }

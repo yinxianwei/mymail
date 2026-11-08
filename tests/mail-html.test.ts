@@ -138,3 +138,38 @@ test("only plain http(s) addresses reach the system browser", () => {
   expect(httpLink("https://u:secret@example.com")).toBe("");
   expect(httpLink("/relative")).toBe("");
 });
+
+test("the trusted bridge expands sender scroll panels and measures body rather than iframe viewport", async () => {
+  const html = documentForMail(
+    `<style>body{height:300px;overflow:auto!important}.panel{height:80px;max-height:80px;overflow-y:auto}</style><div class="panel"><p>first</p><p>last</p></div>`,
+    { dark: true, rich: true },
+  );
+  const reports: number[] = [];
+  const dom = new JSDOM(html, {
+    runScripts: "dangerously",
+    pretendToBeVisual: true,
+    beforeParse(window) {
+      window.postMessage = (data: { "mail:height"?: number }) => {
+        if (data["mail:height"]) reports.push(data["mail:height"]);
+      };
+      Object.defineProperty(window.HTMLElement.prototype, "scrollHeight", {
+        get() {
+          return this.tagName === "BODY" ? 48000 : 1;
+        },
+      });
+    },
+  });
+  await new Promise((resolve) =>
+    dom.window.addEventListener("load", resolve, { once: true }),
+  );
+  const panel = dom.window.document.querySelector<HTMLElement>(".panel")!;
+  expect(panel.style.height).toBe("auto");
+  expect(panel.style.maxHeight).toBe("none");
+  expect(panel.style.overflowY).toBe("visible");
+  expect(reports).toContain(48000);
+  expect(dom.window.getComputedStyle(dom.window.document.body).overflow).toBe(
+    "hidden",
+  );
+  expect(dom.window.document.querySelectorAll("script")).toHaveLength(1);
+  dom.window.close();
+});

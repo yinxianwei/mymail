@@ -94,7 +94,10 @@ describe("resumeDraft", () => {
     // Two mails can share a subject; the quote date tells them apart.
     const twin: Message = { ...message, date: "2026-11-05T01:00:00Z" };
     const seed = replySeed();
-    const draft: Draft = { ...seed.draft, body: composeBody("收到", replyQuote(twin)) };
+    const draft: Draft = {
+      ...seed.draft,
+      body: composeBody("收到", replyQuote(twin)),
+    };
     expect(resumeDraft(draft, seed)).toBeNull();
   });
 
@@ -141,6 +144,9 @@ test("回复 restores the unsent text instead of an empty window", async () => {
     getComputedStyle: window.getComputedStyle.bind(window),
     MutationObserver: window.MutationObserver,
     HTMLElement: window.HTMLElement,
+    HTMLFormElement: window.HTMLFormElement,
+    DocumentFragment: window.DocumentFragment,
+    HTMLSelectElement: window.HTMLSelectElement,
     HTMLInputElement: window.HTMLInputElement,
     Node: window.Node,
     NodeFilter: window.NodeFilter,
@@ -212,9 +218,7 @@ test("回复 restores the unsent text instead of an empty window", async () => {
       host.querySelector<HTMLButtonElement>(".message-row")!.click();
     });
     await act(async () => {
-      document
-        .querySelector<HTMLButtonElement>('[aria-label="回复"]')!
-        .click();
+      document.querySelector<HTMLButtonElement>('[aria-label="回复"]')!.click();
     });
 
     expect(document.querySelector(".modal-h h2")?.textContent).toBe("回复邮件");
@@ -246,9 +250,7 @@ test("回复 restores the unsent text instead of an empty window", async () => {
     };
     stored = { ["reply:" + other.id]: typedReply("上一封的回复", other) };
     await act(async () => {
-      document
-        .querySelector<HTMLButtonElement>('[aria-label="回复"]')!
-        .click();
+      document.querySelector<HTMLButtonElement>('[aria-label="回复"]')!.click();
     });
     expect(document.querySelector(".draft-status")?.textContent).toBe("");
     expect(field<HTMLTextAreaElement>("compose-body")!.value).toBe("");

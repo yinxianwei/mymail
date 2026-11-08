@@ -40,6 +40,17 @@ export interface Attachment {
   index: number;
 }
 
+export interface AttachmentPreview {
+  name: string;
+  size: number;
+  kind: string;
+  mime: string;
+  data: string;
+  text: string;
+  truncated: boolean;
+  reason: string;
+}
+
 /**
  * CacheStats is what the preferences pane shows. Body text and attachment
  * bytes are stored in separate tables, so both are counted.
@@ -64,6 +75,7 @@ export interface DesktopState {
 }
 
 export interface Draft {
+  senderAccountId?: string;
   accountId: string;
   key: string;
   to: string;
@@ -97,6 +109,11 @@ export interface HistoryPage {
   hasMore: boolean;
   nextUID: number;
   validity: number;
+}
+
+export interface LanguageSettings {
+  preference: string;
+  locale: string;
 }
 
 export interface MailTarget {
@@ -189,6 +206,9 @@ export const MailService = {
   getDraft(accountID: string, key: string): Promise<Draft> {
     return call("MailService.GetDraft", accountID, key);
   },
+  getLanguage(): Promise<LanguageSettings> {
+    return call("MailService.GetLanguage");
+  },
   /**
    * Settings live in `metadata`, the same key/value table as the inbox
    * checkpoints, so no schema change is needed for a preferences pane.
@@ -245,6 +265,13 @@ export const MailService = {
   pickAttachments(): Promise<DraftAttachment[]> {
     return call("MailService.PickAttachments");
   },
+  /**
+   * PreviewAttachment only reads a message's cached/fetched MIME part. It never
+   * accepts filesystem paths, executes an attachment, or returns an arbitrary URL.
+   */
+  previewAttachment(id: string, index: number): Promise<AttachmentPreview> {
+    return call("MailService.PreviewAttachment", id, index);
+  },
   readMessage(id: string): Promise<Message> {
     return call("MailService.ReadMessage", id);
   },
@@ -268,6 +295,9 @@ export const MailService = {
   },
   setFlagged(id: string, flagged: boolean): Promise<string> {
     return call("MailService.SetFlagged", id, flagged);
+  },
+  setLanguage(preference: string): Promise<LanguageSettings> {
+    return call("MailService.SetLanguage", preference);
   },
   setNotifications(enabled: boolean): Promise<DesktopState> {
     return call("MailService.SetNotifications", enabled);

@@ -110,14 +110,15 @@ type DraftAttachment struct {
 }
 
 type Draft struct {
-	AccountID   string            `json:"accountId"`
-	Key         string            `json:"key"`
-	To          string            `json:"to"`
-	Cc          string            `json:"cc"`
-	Bcc         string            `json:"bcc"`
-	Subject     string            `json:"subject"`
-	Body        string            `json:"body"`
-	Attachments []DraftAttachment `json:"attachments"`
+	SenderAccountID string            `json:"senderAccountId,omitempty"`
+	AccountID       string            `json:"accountId"`
+	Key             string            `json:"key"`
+	To              string            `json:"to"`
+	Cc              string            `json:"cc"`
+	Bcc             string            `json:"bcc"`
+	Subject         string            `json:"subject"`
+	Body            string            `json:"body"`
+	Attachments     []DraftAttachment `json:"attachments"`
 }
 
 // Settings live in `metadata`; CacheLimit is the number of cached message
@@ -179,6 +180,8 @@ type MailService struct {
 	openMail         func()
 	composeMailto    func(Draft)
 	testNotification func(context.Context) error
+	systemLanguages  func() []string
+	changeLocale     func(string)
 }
 
 func openService(path string) (*MailService, error) {

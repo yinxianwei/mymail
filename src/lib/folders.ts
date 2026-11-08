@@ -1,3 +1,4 @@
+import { t, getLocale } from "./i18n";
 import type { FolderInfo } from "../mygo";
 
 export const folderRoles = {
@@ -63,7 +64,7 @@ export function folderRole(folder: FolderInfo): FolderRole | undefined {
 export function folderTitle(folder: FolderInfo) {
   const role = folderRole(folder);
   return role
-    ? folderRoles[role]
+    ? t(folderRoles[role])
     : folder.delimiter
       ? folder.name.split(folder.delimiter).at(-1)!
       : folder.name;
@@ -110,7 +111,7 @@ export function buildFolderTree(folders: FolderInfo[]) {
     });
   }
   const custom = collect(roots);
-  const collator = new Intl.Collator("zh-CN", {
+  const collator = new Intl.Collator(getLocale(), {
     numeric: true,
     sensitivity: "base",
   });

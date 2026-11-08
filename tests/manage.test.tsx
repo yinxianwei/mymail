@@ -54,8 +54,10 @@ function bootstrap() {
     getComputedStyle: window.getComputedStyle.bind(window),
     MutationObserver: window.MutationObserver,
     HTMLElement: window.HTMLElement,
-    HTMLInputElement: window.HTMLInputElement,
+    HTMLFormElement: window.HTMLFormElement,
+    DocumentFragment: window.DocumentFragment,
     HTMLSelectElement: window.HTMLSelectElement,
+    HTMLInputElement: window.HTMLInputElement,
     Node: window.Node,
     NodeFilter: window.NodeFilter,
     CustomEvent: window.CustomEvent,
@@ -92,6 +94,16 @@ test("P0 管理操作、设置与写信新字段都可用", async () => {
   // The backend flips the cached flag before returning; mirror that so the
   // reader's toolbar is tested against a real state change.
   let rows: Message[] = [{ ...message }];
+  const savedDraft: Draft = {
+    accountId: account.id,
+    key: "reply:saved",
+    to: "friend@example.invalid",
+    cc: "",
+    bcc: "copy@example.invalid",
+    subject: "保存的回复",
+    body: "下次继续编辑",
+    attachments: [],
+  };
   Object.assign(api, {
     state: async () => ({ accounts: [account], database: "test.db" }),
     desktopState: async () => state,
@@ -156,16 +168,20 @@ test("P0 管理操作、设置与写信新字段都可用", async () => {
       limit: 2000,
     }),
     openMailto: async () => {},
-    getDraft: async (id: string, key: string): Promise<Draft> => ({
-      accountId: id,
-      key,
-      to: "",
-      cc: "",
-      bcc: "",
-      subject: "",
-      body: "",
-      attachments: [],
-    }),
+    listDrafts: async () => [savedDraft],
+    getDraft: async (id: string, key: string): Promise<Draft> =>
+      key === savedDraft.key
+        ? savedDraft
+        : {
+            accountId: id,
+            key,
+            to: "",
+            cc: "",
+            bcc: "",
+            subject: "",
+            body: "",
+            attachments: [],
+          },
     saveDraft: async () => {},
     send: async () => "邮件已发送",
   });
@@ -243,29 +259,137 @@ test("P0 管理操作、设置与写信新字段都可用", async () => {
     await act(async () => button("删除").click());
     expect(calls).toContain(`delete:${message.id}:false`);
 
+    const readerDoc = document.querySelector<HTMLIFrameElement>(
+      'iframe[title="隔离的邮件正文"]',
+    )?.srcdoc;
     // Preferences: all four knobs are present and persist through IPC.
     await act(async () => button("账号设置").click());
+    expect(
+      document.querySelector<HTMLIFrameElement>(
+        'iframe[title="隔离的邮件正文"]',
+      )?.srcdoc,
+    ).toBe(readerDoc);
+    const tab = async (label: string) =>
+      act(async () => {
+        const trigger = [
+          ...document.querySelectorAll<HTMLElement>('[role="tab"]'),
+        ].find((n) => n.textContent?.trim() === label)!;
+        trigger.dispatchEvent(
+          new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+        );
+      });
+    const panel = () =>
+      document.querySelector<HTMLElement>('[role="tabpanel"]:not([hidden])')!;
+    expect(panel().textContent).toContain("语言");
+    expect(panel().querySelector("#pref-interval")).toBeNull();
+    await act(async () => {
+      const current = document.querySelector<HTMLElement>(
+        '[role="tab"][aria-selected="true"]',
+      )!;
+      current.focus();
+      current.dispatchEvent(
+        new window.KeyboardEvent("keydown", {
+          key: "ArrowDown",
+          bubbles: true,
+        }),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    });
+    expect(
+      document.querySelector('[role="tab"][aria-selected="true"]')?.textContent,
+    ).toContain("邮箱账号");
+    expect(
+      panel().querySelector<HTMLFormElement>("#add-mail-account")!.hidden,
+    ).toBe(true);
+    await act(async () => button("添加邮箱").click());
+    const email = document.querySelector<HTMLInputElement>("#email")!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )!.set!.call(email, "unsaved@example.invalid");
+      email.dispatchEvent(new window.Event("input", { bubbles: true }));
+    });
+    await tab("邮件");
+    expect(panel().querySelector("#pref-interval")).not.toBeNull();
+    await tab("邮箱账号");
+    expect(document.querySelector<HTMLInputElement>("#email")!.value).toBe(
+      "unsaved@example.invalid",
+    );
+    expect(
+      panel().querySelector<HTMLFormElement>("#add-mail-account")!.hidden,
+    ).toBe(false);
+    await tab("邮件");
     expect(document.querySelector("#pref-interval")).not.toBeNull();
     expect(document.querySelector("#pref-remote")).not.toBeNull();
-    const interval =
-      document.querySelector<HTMLSelectElement>("#pref-interval")!;
-    const setter = Object.getOwnPropertyDescriptor(
-      window.HTMLSelectElement.prototype,
-      "value",
-    )!.set!;
+    Object.assign(window.HTMLElement.prototype, { scrollIntoView() {} });
     await act(async () => {
-      setter.call(interval, "15");
-      interval.dispatchEvent(new window.Event("change", { bubbles: true }));
+      document.querySelector("#pref-interval")!.dispatchEvent(
+        new window.KeyboardEvent("keydown", {
+          key: "ArrowDown",
+          bubbles: true,
+        }),
+      );
+    });
+    await act(async () => {
+      const option = [
+        ...document.querySelectorAll<HTMLElement>('[role="option"]'),
+      ].find((n) => n.textContent?.includes("15 秒"))!;
+      option.dispatchEvent(
+        new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
     });
     expect(calls).toContain("setSettings:15");
+    const checkbox = (label: string) =>
+      [
+        ...document.querySelectorAll<HTMLButtonElement>(
+          '[data-slot="checkbox"]',
+        ),
+      ].find((n) => n.closest("label")?.textContent?.includes(label))!;
+    await act(async () => checkbox("打开邮件后自动标记为已读").click());
+    expect(prefs.autoMarkRead).toBe(true);
+    expect(
+      checkbox("打开邮件后自动标记为已读").getAttribute("aria-checked"),
+    ).toBe("true");
+    await act(async () => checkbox("发送后把副本").click());
+    expect(prefs.appendSent).toBe(true);
+    await act(async () => checkbox("打开邮件后自动标记为已读").click());
+    expect(prefs.autoMarkRead).toBe(false);
 
     // Compose gained Bcc and a native attachment picker.
     await act(async () => {
-      button("完成").click();
+      expect(document.querySelector(".settings-modal .modal-f")).toBeNull();
+      document
+        .querySelector<HTMLButtonElement>(".settings-modal .modal-h button")!
+        .click();
     });
     await act(async () => button("写邮件").click());
     expect(document.querySelector("#compose-bcc")).not.toBeNull();
     expect(button("添加附件")).not.toBeNull();
+    await act(async () => button("保存并关闭").click());
+    // Local drafts have an explicit entry, with the original slot and Bcc restored.
+    await act(async () => button("本地草稿").click());
+    expect(document.querySelector(".draft-list-item")?.textContent).toContain(
+      savedDraft.subject,
+    );
+    await act(async () => button("继续编辑").click());
+    expect(
+      document.querySelector<HTMLInputElement>("#compose-subject")!.value,
+    ).toBe(savedDraft.subject);
+    expect(
+      document.querySelector<HTMLTextAreaElement>("#compose-body")!.value,
+    ).toBe(savedDraft.body);
+    expect(
+      document.querySelector("#compose-bcc")?.parentElement?.textContent,
+    ).toContain("copy@example.invalid");
+    await act(async () => button("保存并关闭").click());
+    await act(async () => button("未读").click());
+    expect(document.querySelectorAll(".message-row")).toHaveLength(0);
+    expect(button("未读").getAttribute("aria-checked")).toBe("true");
+    await act(async () => button("星标").click());
+    expect(document.querySelectorAll(".message-row")).toHaveLength(1);
+    await act(async () => button("全部").click());
+    expect(document.querySelectorAll(".message-row")).toHaveLength(1);
   } finally {
     await act(async () => root.unmount());
     host.remove();

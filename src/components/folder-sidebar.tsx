@@ -1,3 +1,4 @@
+import { t, useLocale } from "../lib/i18n";
 import { useEffect, useMemo, useState } from "react";
 import {
   Inbox,
@@ -44,13 +45,14 @@ export function FolderSidebar({
   onSelect: (id: string) => void;
   inboxUnread?: number;
 }) {
+  const locale = useLocale();
   const storageKey = `mail:folder-expansion:${accountID}`;
   const [expanded, setExpanded] = useState(() =>
     readFolderExpansion(storageKey),
   );
   const { standard, custom } = useMemo(
     () => buildFolderTree(folders),
-    [folders],
+    [folders, locale],
   );
   useEffect(() => {
     const ancestors = ancestorIDs([...standard, ...custom], active);
@@ -97,7 +99,7 @@ export function FolderSidebar({
                   <button
                     type="button"
                     className="folder-disclosure"
-                    aria-label={`${open ? "收起" : "展开"}${node.title}`}
+                    aria-label={`${open ? t("收起") : t("展开")}${node.title}`}
                     aria-expanded={open}
                     onClick={() => toggle(node.id)}
                   >
@@ -135,7 +137,7 @@ export function FolderSidebar({
                     inboxUnread > 0 && (
                       <small
                         className="folder-unread"
-                        aria-label={`${inboxUnread} 封未读`}
+                        aria-label={t("{0} 封未读", { 0: inboxUnread })}
                       >
                         {inboxUnread > 999 ? "999+" : inboxUnread}
                       </small>
@@ -150,7 +152,7 @@ export function FolderSidebar({
     );
   }
   return (
-    <nav aria-label="邮箱文件夹" className="folder-navigation">
+    <nav aria-label={t("邮箱文件夹")} className="folder-navigation">
       {render(standard)}
       {custom.length > 0 && (
         <div className="custom-folders">
@@ -164,7 +166,7 @@ export function FolderSidebar({
               size={12}
               className={(expanded.$custom ?? true) ? "open" : ""}
             />
-            <span>我的文件夹</span>
+            <span>{t("我的文件夹")}</span>
           </button>
           {(expanded.$custom ?? true) && render(custom)}
         </div>

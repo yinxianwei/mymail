@@ -13,6 +13,9 @@ bundled assets retain their own copyrights and licenses.
   [src/assets/fonts/LICENSE.txt](../src/assets/fonts/LICENSE.txt).
 - Lucide icons are provided by `lucide-react`; its license and attribution are
   collected from the installed package when building.
+- PDF.js renders PDF attachments as canvas pages. Its Apache-2.0 license,
+  CMap notices and bundled standard-font licenses are included in the generated
+  notices. The viewer and supporting data are bundled locally for offline use.
 - My Mail's M/envelope logo sources live in [design/logo](../design/logo/README.md)
   and are covered by this repository's MIT license.
 

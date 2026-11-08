@@ -185,7 +185,14 @@ const norm = (value: string) => value.replace(/\s+/g, " ").trim().toLowerCase();
 
 /** A draft with nothing typed in it is not worth offering back. */
 export function draftHasContent(draft: Draft): boolean {
-  return !!(draft.to.trim() || draft.cc.trim() || draft.subject.trim() || draft.body.trim());
+  return !!(
+    draft.to.trim() ||
+    draft.cc.trim() ||
+    draft.bcc?.trim() ||
+    draft.subject.trim() ||
+    draft.body.trim() ||
+    draft.attachments?.length
+  );
 }
 
 /**
@@ -206,5 +213,8 @@ export function resumeDraft(draft: Draft, seed: ComposeSeed): Draft | null {
     if (norm(split.quote.date) !== norm(seed.quote.date)) return null;
     if (norm(split.quote.from) !== norm(seed.quote.from)) return null;
   }
-  return { ...draft, body: composeBody(split.content, seed.quote ?? split.quote) };
+  return {
+    ...draft,
+    body: composeBody(split.content, seed.quote ?? split.quote),
+  };
 }

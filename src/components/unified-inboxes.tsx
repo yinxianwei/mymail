@@ -1,3 +1,4 @@
+import { t } from "../lib/i18n";
 import { useState } from "react";
 import { ChevronRight, Inbox } from "lucide-react";
 import type { Account } from "../mygo";
@@ -38,12 +39,12 @@ export function UnifiedInboxes({
   }
   if (!accounts.length) return null;
   return (
-    <nav className="unified-inboxes" aria-label="快捷文件夹">
+    <nav className="unified-inboxes" aria-label={t("快捷文件夹")}>
       <div className={"folder-tree-row " + (unified ? "selected" : "")}>
         <button
           className="folder-disclosure"
           type="button"
-          aria-label={expanded ? "收起所有收件箱" : "展开所有收件箱"}
+          aria-label={expanded ? t("收起所有收件箱") : t("展开所有收件箱")}
           aria-expanded={expanded}
           onClick={toggle}
         >
@@ -56,7 +57,7 @@ export function UnifiedInboxes({
           onClick={onAll}
         >
           <Inbox size={16} />
-          <span>所有收件箱</span>
+          <span>{t("所有收件箱")}</span>
           {total > 0 && <small className="folder-unread">{total}</small>}
         </button>
       </div>

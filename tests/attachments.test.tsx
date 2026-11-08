@@ -28,6 +28,9 @@ test("attachments list their size and save through the backend", async () => {
     getComputedStyle: window.getComputedStyle.bind(window),
     MutationObserver: window.MutationObserver,
     HTMLElement: window.HTMLElement,
+    HTMLFormElement: window.HTMLFormElement,
+    DocumentFragment: window.DocumentFragment,
+    HTMLSelectElement: window.HTMLSelectElement,
     HTMLInputElement: window.HTMLInputElement,
     Node: window.Node,
     NodeFilter: window.NodeFilter,
@@ -80,6 +83,8 @@ test("attachments list their size and save through the backend", async () => {
   };
   const calls: string[] = [];
   let outcome: "path" | "cancel" | "error" = "path";
+  let previewOutcome: "text" | "unsupported" | "error" = "text";
+  const previewCalls: string[] = [];
   Object.assign(api, {
     state: async () => ({ accounts: [account], database: "test.db" }),
     desktopState: async () => state,
@@ -87,11 +92,25 @@ test("attachments list their size and save through the backend", async () => {
     folders: async () => [
       { name: "INBOX", delimiter: "/", role: "inbox", selectable: true },
     ],
-    messages: async () => [message],
-    allInboxMessages: async () => [message],
+    messages: async () => [{ ...message, attachments: [] }],
+    allInboxMessages: async () => [{ ...message, attachments: [] }],
     checkMail: async () => state,
     readMessage: async () => message,
     markRead: async () => {},
+    previewAttachment: async (id: string, index: number) => {
+      previewCalls.push(`${id}#${index}`);
+      if (previewOutcome === "error") throw new Error("not cached");
+      return {
+        name: "数据.csv",
+        kind: previewOutcome,
+        mime: "text/plain",
+        data: "",
+        text: '<script id="attachment-script">not executable</script>\n姓名,金额',
+        size: 512,
+        truncated: false,
+        reason: previewOutcome === "unsupported" ? "unsupported" : "",
+      };
+    },
     downloadAttachment: async (id: string, index: number) => {
       calls.push(`${id}#${index}`);
       if (outcome === "error")
@@ -114,13 +133,22 @@ test("attachments list their size and save through the backend", async () => {
       host.querySelector<HTMLButtonElement>(".message-row")!.click();
     });
 
+    // Reading the body exposes attachment metadata to the local list filter.
+    await act(async () => {
+      [...document.querySelectorAll("button")]
+        .find((b) => b.textContent?.trim() === "附件")!
+        .click();
+    });
+    expect(document.querySelectorAll(".message-row")).toHaveLength(1);
     expect(rows().length).toBe(2);
     expect(rows()[0]!.textContent).toContain("季度复盘.pdf");
     expect(rows()[0]!.textContent).toContain("2 KB");
     expect(rows()[1]!.textContent).toContain("512 B");
 
     await act(async () =>
-      rows()[0]!.querySelector<HTMLButtonElement>(".attachment-save")!.click(),
+      rows()[0]!
+        .querySelector<HTMLButtonElement>(".attachment-download")!
+        .click(),
     );
     expect(calls).toEqual(["first:INBOX:1:1#0"]);
     expect(feedback()?.textContent).toContain(
@@ -145,6 +173,48 @@ test("attachments list their size and save through the backend", async () => {
       rows()[0]!.querySelector<HTMLButtonElement>(".attachment-save")
         ?.textContent,
     ).toBe("保存");
+    const previewButton = () =>
+      rows()[1]!.querySelector<HTMLButtonElement>(
+        ".attachment-preview-action",
+      )!;
+    const previewModal = () =>
+      document.querySelector(".attachment-preview-modal")!;
+    const closePreview = () =>
+      act(async () =>
+        previewModal()
+          .querySelector<HTMLButtonElement>(".modal-h button")!
+          .click(),
+      );
+    await act(async () => previewButton().click());
+    expect(previewCalls).toEqual(["first:INBOX:1:1#1"]);
+    expect(previewModal().querySelector("pre")?.textContent).toContain(
+      '<script id="attachment-script">',
+    );
+    expect(document.querySelector("#attachment-script")).toBeNull();
+    outcome = "cancel";
+    await act(async () =>
+      [...previewModal().querySelectorAll("button")]
+        .find((n) => n.textContent?.includes("下载附件"))!
+        .click(),
+    );
+    expect(calls.at(-1)).toBe("first:INBOX:1:1#1");
+    expect(previewModal().querySelector('[role="alert"]')).toBeNull();
+    await closePreview();
+    expect(document.querySelector(".attachment-preview-modal")).toBeNull();
+    previewOutcome = "error";
+    await act(async () => previewButton().click());
+    expect(
+      previewModal().querySelector('[role="alert"]')?.textContent,
+    ).toContain("加载失败");
+    previewOutcome = "unsupported";
+    await act(async () =>
+      [...previewModal().querySelectorAll("button")]
+        .find((n) => n.textContent?.includes("重试"))!
+        .click(),
+    );
+    expect(previewModal().textContent).toContain("暂不支持预览");
+    expect(previewModal().textContent).toContain("下载附件");
+    await closePreview();
   } finally {
     await act(async () => root.unmount());
     host.remove();

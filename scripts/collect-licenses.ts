@@ -18,7 +18,7 @@ const sections: string[] = [
 
 function collect(name: string, directory: string) {
   const notices = readdirSync(directory).filter((file) =>
-    /^(licen[sc]e|copying|notice|copyright)([.-].*)?$/i.test(file),
+    /^(licen[sc]e|copying|notice|copyright)([._-].*)?$/i.test(file),
   );
   const texts: string[] = [];
   for (const file of notices.sort()) {
@@ -113,6 +113,11 @@ function collectPackage(name: string, from: string, optional = false) {
 const app = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 for (const name of Object.keys(app.dependencies).sort())
   collectPackage(name, root);
+collect("PDF.js CMap data", join(root, "node_modules/pdfjs-dist/cmaps"));
+collect(
+  "PDF.js standard fonts",
+  join(root, "node_modules/pdfjs-dist/standard_fonts"),
+);
 mkdirSync(join(root, "resources/licenses"), { recursive: true });
 writeFileSync(
   join(root, "resources/licenses/THIRD_PARTY_LICENSES.txt"),

@@ -89,6 +89,20 @@ func main() {
 		log.Fatal("无法打开本地数据库")
 	}
 	defer service.db.Close()
+	mygo.App.SetLanguages("en", "zh-Hans")
+	service.systemLanguages = mygo.App.PreferredLanguages
+	service.changeLocale = func(preference string) {
+		tag := preference
+		if tag == "system" {
+			tag = ""
+		}
+		if tag == "zh-CN" {
+			tag = "zh-Hans"
+		}
+		mygo.App.SetLocale(tag)
+	}
+	service.changeLocale(service.languagePreference())
+	mygo.App.OnLocaleChanged(func(string) { service.publishDesktop() })
 	slog.Info("database.open.finished")
 	mygo.Bind(service)
 	mygo.App.OnNotificationClick(func(id string) {

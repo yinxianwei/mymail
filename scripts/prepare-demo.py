@@ -14,6 +14,8 @@ def main():
     db = sqlite3.connect(folder / "mail.db")
     db.executescript("""
         CREATE TABLE accounts(id TEXT PRIMARY KEY, data TEXT NOT NULL);
+        CREATE TABLE drafts_v2(account_id TEXT NOT NULL, key TEXT NOT NULL,
+          data TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY(account_id,key));
         CREATE TABLE messages(id TEXT PRIMARY KEY, account_id TEXT NOT NULL,
           folder TEXT NOT NULL, uid INTEGER NOT NULL, validity INTEGER NOT NULL,
           data TEXT NOT NULL);
@@ -61,6 +63,9 @@ def main():
         db.execute("INSERT INTO messages VALUES(?,?,?,?,?,?)", (
             message_id, account_id, "INBOX", uid, 1, json.dumps(message),
         ))
+    for account_id, subject in [("demo-personal", "周末的计划"), ("demo-work", "设计方案反馈")]:
+        draft = {"accountId": account_id, "key": "new", "to": "friend@example.invalid", "cc": "", "bcc": "", "subject": subject, "body": "这是一份虚构的本地草稿，可以继续编辑。", "attachments": []}
+        db.execute("INSERT INTO drafts_v2 VALUES(?,?,?,?)", (account_id, "new", json.dumps(draft), now.isoformat()))
     db.commit()
     db.close()
     os.chmod(folder / "mail.db", 0o600)
