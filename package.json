@@ -34,7 +34,7 @@
     "clsx": "^2.1.1",
     "dompurify": "^3.3.0",
     "lucide-react": "^0.460.0",
-    "mygo-runtime": "0.6.3",
+    "mygo-runtime": "0.7.4",
     "pdfjs-dist": "^6.5.438",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
