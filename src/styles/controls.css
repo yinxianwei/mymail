@@ -1,0 +1,55 @@
+/* ============================================================
+   CONTROLS —— components.css 里「utility 拼不出版式」的两类
+   ------------------------------------------------------------
+   这个文件刻意很小。radio / chip / label 这些都已经在 React 组件里
+   用 utility 实现了（checkbox.tsx 的 <Radio>、badge.tsx 的 <Chip> /
+   <DotLabel>），这里再定义一遍就会出现两套实现，改一处漏一处。
+
+   留下的是两个「只能靠类名」的东西：
+     .pillbtn —— 表格里点开编辑的属性按钮，StatusPill 的 editable
+                 形态直接挂这个类，源项目全靠它撑起 30px 行高
+     .link    —— 提示条里的内联文字动作
+   ============================================================ */
+
+/* ---- pillbtn：表格里那种「点了就编辑」的属性按钮 ---- */
+.pillbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--h-sm);
+  padding: 0 7px;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
+  color: var(--text);
+  transition: background var(--dur);
+  white-space: nowrap;
+  max-width: 100%;
+}
+.pillbtn:hover {
+  background: var(--surface-2);
+}
+.pillbtn.empty {
+  color: var(--text-3);
+}
+.pillbtn.bordered {
+  border: 1px solid var(--border);
+}
+.pillbtn.over {
+  color: var(--red);
+}
+
+/* ---- link：内联文字动作（提示条里的 Undo / Try again） ----
+   ⚠️ 源仓库的 src/styles 里搜不到 `.link` 的任何规则，但线上构建版渲染
+   出来是「品牌色 + 下划线」。说明部署的 CSS 比仓库里的新。
+   这里按线上实际效果补，别按仓库源码补——否则会得到一串没有样式的裸按钮。 */
+.link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  cursor: pointer;
+  transition: text-decoration-color var(--dur);
+}
+.link:hover {
+  text-decoration-thickness: 1.5px;
+}

@@ -1,0 +1,32 @@
+/* Geist 自托管。
+   源项目用 CDN / 系统字体兜底，starter 里改成打包进产物：一是离线可用，
+   二是 13.5px 这个字号下 Geist 与 Inter 的字重、字宽差异肉眼可见，
+   「视觉契约一致」要求字体也必须一致。
+
+   两个文件都是可变字体（wght 100–900 一条文件），所以不需要按字重切 6 份：
+   - Geist-Variable.woff2      69KB
+   - GeistMono-Variable.woff2  71KB
+   字体由 Vercel 以 OFL-1.1 发布，许可原文在同目录 LICENSE.txt。
+
+   文件放在 src/assets/fonts 而不是 public：public 的绝对路径 url('/fonts/x')
+   构建时不会拼 base，部署到带子路径的站点时
+   会 404；走 assets 管线才会被 Vite 改写成 base 相对并加指纹。
+
+   font-display: swap —— 中文回退字体（PingFang / 微软雅黑）先上屏，
+   Geist 到了再替换。用 block 会让首屏白字 3 秒，这里等不起。 */
+@font-face {
+  font-family: "Geist";
+  src: url("../assets/fonts/Geist-Variable.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url("../assets/fonts/GeistMono-Variable.woff2")
+    format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}

@@ -1,0 +1,66 @@
+name: Release preview
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    name: Build and prepare draft release
+    if: github.repository == 'yinxianwei/mymail'
+    runs-on: macos-15
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    env:
+      MYMAIL_SIGN: "-"
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .bun-version
+      - name: Validate release metadata and repository
+        run: python3 scripts/check-repository.py "$RELEASE_TAG"
+      - name: Scan history before distributing
+        run: go run github.com/zricethezav/gitleaks/v8@v8.30.1 git --redact --no-banner --log-opts=--all
+      - run: bun install --frozen-lockfile
+      - run: go vet ./...
+      - run: bun run test
+      - run: bun run build -platform darwin/arm64
+      - name: Verify generated bindings, signature and notices
+        run: |
+          git diff --exit-code -- src/mygo.ts
+          codesign --verify --deep --strict "build/darwin-arm64/My Mail.app"
+          test -s "build/darwin-arm64/My Mail.app/Contents/Resources/licenses/THIRD_PARTY_LICENSES.txt"
+      - name: Prepare named asset and checksums
+        run: |
+          mkdir -p release-assets
+          cp "build/darwin-arm64/My Mail ${RELEASE_TAG#v} arm64.dmg" "release-assets/My-Mail-${RELEASE_TAG}-macos-arm64.dmg"
+          cp resources/licenses/THIRD_PARTY_LICENSES.txt release-assets/
+          cp LICENSE release-assets/LICENSE.txt
+          cd release-assets
+          shasum -a 256 ./*.dmg > SHA256SUMS
+          shasum -a 256 -c SHA256SUMS
+      - name: Create draft preview (never auto-publish)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create "$RELEASE_TAG" release-assets/* \
+            --verify-tag --draft --prerelease \
+            --title "My Mail ${RELEASE_TAG} — Preview" \
+            --notes-file .github/RELEASE_NOTES.md --generate-notes

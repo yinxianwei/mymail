@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability / 安全漏洞
+    url: https://github.com/yinxianwei/mymail/security/policy
+    about: Please report vulnerabilities privately; do not post credentials or private mail.
+  - name: Setup and troubleshooting / 使用与排查
+    url: https://github.com/yinxianwei/mymail/blob/main/docs/user-guide.zh-CN.md
+    about: Read the usage guide before reporting a connection problem.

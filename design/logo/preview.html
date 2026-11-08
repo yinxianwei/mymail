@@ -1,0 +1,71 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+  :root{--ink:#1d1c1a;--ink2:#57544e;--ink3:#8c8880;--line:#e9e7e2;--paper:#fbfaf8;--acc:#4b5bd6}
+  *{box-sizing:border-box}
+  body{margin:0;padding:40px 44px;background:var(--paper);color:var(--ink);
+       font:13px/1.6 -apple-system,"PingFang SC",Helvetica,sans-serif}
+  .head{display:flex;align-items:baseline;gap:14px;margin-bottom:6px}
+  h1{margin:0;font-size:17px;font-weight:650;letter-spacing:-.2px}
+  .sub{color:var(--ink3);font-size:12px}
+  .hero{display:flex;gap:40px;align-items:flex-start;margin:28px 0 6px}
+  .hero img{border-radius:26px;box-shadow:0 14px 34px rgba(24,22,19,.16),0 2px 6px rgba(24,22,19,.08)}
+  .hero .meta{max-width:330px;padding-top:6px}
+  .meta dl{display:grid;grid-template-columns:78px 1fr;gap:10px 12px;margin:16px 0 0;font-size:12px}
+  .meta dt{color:var(--ink3)}
+  .meta dd{margin:0;color:var(--ink2)}
+  .swatches{display:flex;gap:8px;margin-top:18px}
+  .sw{width:46px;height:46px;border-radius:12px;border:1px solid var(--line)}
+  .sw span{display:block;margin-top:52px;font-size:10px;color:var(--ink3);white-space:nowrap}
+  h2{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);
+     margin:38px 0 14px;padding-top:26px;border-top:1px solid var(--line)}
+  .row{display:flex;gap:26px;align-items:flex-end;flex-wrap:wrap}
+  .cell{text-align:center}
+  .cell img{border-radius:20px}
+  .cell.wide img{border-radius:22px}
+  .cell p{margin:9px 0 0;font-size:11px;color:var(--ink3)}
+  .ladder{display:flex;gap:18px;align-items:flex-end}
+  .ladder img{border-radius:6px}
+  .dock{display:flex;gap:14px;align-items:flex-end;padding:14px 18px;border-radius:22px;
+        background:rgba(255,255,255,.62);border:1px solid var(--line);backdrop-filter:blur(8px);width:max-content}
+  .dock i{display:block;width:52px;height:52px;border-radius:14px;background:#e7e4dd}
+  .lockup{display:flex;align-items:center;gap:14px}
+  .lockup img{width:56px;height:56px;border-radius:14px}
+  .lockup b{font-size:19px;font-weight:650;letter-spacing:-.3px}
+</style></head><body>
+  <div class="head"><h1>My Mail · 标志</h1><span class="sub">Monogram / envelope flap</span></div>
+  <div class="hero">
+    <img src="icon-512.png" width="232" height="232" alt="My Mail icon">
+    <div class="meta">
+      <div class="lockup"><img src="icon-128.png" alt=""><b>My Mail</b></div>
+      <dl>
+        <dt>构成</dt><dd>一个 M：两条竖边 + 深 V。V 同时是信封的翻盖，因此单字母也读作「信」。</dd>
+        <dt>比例</dt><dd>字形高 380、宽 420，笔画 94，圆角描边端；方块圆角 230。</dd>
+        <dt>用途</dt><dd>Dock / 应用图标 / 通知 / 列表空态 / favicon。</dd>
+      </dl>
+      <div class="swatches">
+        <div class="sw" style="background:#5a69e2"><span>#5a69e2</span></div>
+        <div class="sw" style="background:#3945ba"><span>#3945ba</span></div>
+        <div class="sw" style="background:#1d1c1a"><span>#1d1c1a</span></div>
+        <div class="sw" style="background:#fbfaf8"><span>#fbfaf8</span></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>变体</h2>
+  <div class="row">
+    <div class="cell wide"><img src="icon-128.png" width="120" height="120"><p>主标 · 靛蓝</p></div>
+    <div class="cell wide"><img src="mono-512.png" width="120" height="120"><p>纸白 · 墨字</p></div>
+    <div class="cell wide"><img src="dark-512.png" width="120" height="120"><p>深色模式</p></div>
+    <div class="cell"><img src="mark-512.png" width="120" height="120" style="border-radius:0"><p>纯字形（透明底）</p></div>
+  </div>
+
+  <h2>小尺寸</h2>
+  <div class="ladder">
+    <img src="icon-128.png" width="128" height="128">
+    <img src="icon-32.png" width="64" height="64">
+    <img src="icon-32.png" width="32" height="32">
+    <img src="icon-16.png" width="16" height="16">
+  </div>
+
+  <h2>Dock 环境</h2>
+  <div class="dock"><i></i><i></i><img src="icon-128.png" width="52" height="52" style="border-radius:14px"><i></i><i></i></div>
+</body></html>

@@ -1,0 +1,22 @@
+name: Feature request / 功能建议
+description: Describe the email workflow you want to improve / 描述希望改善的使用场景
+title: "[Feature]: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve? / 想解决什么问题？
+      description: Describe a concrete workflow and your current workaround.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed behavior / 期望的使用方式
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and context / 替代方案与补充
+      description: Mockups and examples are welcome. Remove private mail and account details.

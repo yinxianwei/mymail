@@ -1,0 +1,170 @@
+/* ============================================================
+   L1 · THEME BRIDGE  — 让 Tailwind 说 Gr8r 的话
+   全部使用 @theme inline：Tailwind 不落地新变量，直接把 var() 内联进
+   utility。这样既不会和 tokens.css 里的同名变量打架（--shadow-sm 是
+   真实冲突点），又能让 [data-theme] 切换实时生效。
+   ============================================================ */
+@import "tailwindcss";
+@import "./tokens.css";
+@import "./base.css";
+
+@theme inline {
+  /* ---- shadcn 契约：颜色 --------------------------------------
+     这些名字是为了让 `npx shadcn add xxx` 拉进来的组件不改一行就正确 */
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--on-accent);
+  --color-secondary: var(--surface-2);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--surface-2);
+  --color-muted-foreground: var(--text-2);
+  /* ⚠️ 语义交叉点：shadcn 的 accent = hover 浅底，Gr8r 的 accent = 品牌主色。
+     品牌主色已映射到 --color-primary（见上）。这里必须是 surface-2。 */
+  --color-accent: var(--surface-2);
+  --color-accent-foreground: var(--text);
+  --color-destructive: var(--red);
+  --color-destructive-foreground: #ffffff;
+  --color-border: var(--border);
+  --color-input: var(--border-strong);
+  --color-ring: var(--accent);
+
+  /* ---- Gr8r 原生维度：shadcn 契约装不下的部分 ------------------ */
+  --color-sidebar: var(--bg-side);
+  --color-sunken: var(--sunken);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-foreground-2: var(--text-2);
+  --color-foreground-3: var(--text-3);
+  --color-foreground-4: var(--text-4);
+  --color-foreground-inverse: var(--text-inv);
+  --color-divider: var(--divider);
+  --color-line-strong: var(--border-strong);
+  --color-brand: var(--accent);
+  --color-brand-foreground: var(--on-accent);
+  --color-brand-soft: var(--accent-soft);
+  --color-brand-line: var(--accent-line);
+  /* 交互态派生色。源项目直接写在组件 CSS 里，这里提取成 token，
+     避免每个组件重复 color-mix() 长串（也避免 agent 写错比例）。 */
+  --color-brand-hover: color-mix(in srgb, var(--accent) 88%, var(--text));
+  --color-brand-active: color-mix(in srgb, var(--accent) 78%, var(--text));
+  --color-danger-hover: color-mix(in srgb, var(--red) 88%, #000);
+
+  /* 语义色（badge/pill 用） */
+  --color-success: var(--green);
+  --color-success-soft: var(--green-soft);
+  --color-warning: var(--amber);
+  --color-warning-soft: var(--amber-soft);
+  --color-danger: var(--red);
+  --color-danger-soft: var(--red-soft);
+  --color-info: var(--blue);
+  --color-violet: var(--violet);
+  --color-teal: var(--teal);
+  --color-rose: var(--rose);
+  --color-orange: var(--orange);
+  --color-neutral: var(--gray);
+
+  /* 任务状态色 */
+  --color-status-backlog: var(--st-backlog);
+  --color-status-todo: var(--st-todo);
+  --color-status-progress: var(--st-progress);
+  --color-status-review: var(--st-review);
+  --color-status-done: var(--st-done);
+
+  /* ---- 圆角：默认 10px 会让整个 UI 松垮，必须是 4/6/8/10 ---- */
+  --radius-xs: var(--r-xs);
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r);
+  --radius-lg: var(--r-lg);
+  --radius-xl: 14px;
+  --radius-full: var(--r-full);
+
+  /* ---- 字号：Tailwind 默认 base=16/sm=14，Gr8r 是 13.5/12.5 ---- */
+  --text-2xs: var(--fs-2xs);
+  --text-2xs--line-height: 1.4;
+  --text-xs: var(--fs-xs);
+  --text-xs--line-height: 1.4;
+  --text-sm: var(--fs-sm);
+  --text-sm--line-height: 1.45;
+  --text-base: var(--fs);
+  --text-base--line-height: 1.45;
+  --text-md: var(--fs-md);
+  --text-md--line-height: 1.45;
+  --text-lg: var(--fs-lg);
+  --text-lg--line-height: 1.4;
+  --text-xl: var(--fs-xl);
+  --text-xl--line-height: 1.3;
+  --text-2xl: var(--fs-2xl);
+  --text-2xl--line-height: 1.25;
+
+  /* ---- 阴影：源变量已叫 --shadow-*，所以这里改名为 elev-N 避免自引用 ---- */
+  --shadow-elev-1: var(--shadow-sm);
+  --shadow-elev-2: var(--shadow-card);
+  --shadow-elev-3: var(--shadow-pop);
+  --shadow-elev-4: var(--shadow-drag);
+
+  /* ---- 字体 ---- */
+  --font-sans: var(--font);
+  --font-mono: var(--mono);
+
+  /* ---- 缓动 ---- */
+  --ease-out-gr8r: var(--ease);
+  --ease-spring: var(--spring);
+  --ease-drawer: var(--ease-drawer);
+
+  /* ---- 断点：Gr8r 只有三档，且和 Tailwind 默认值不一致 ----
+     源项目 responsive.css 用的是 1100 / 900 / 640 三个 max-width。
+     Tailwind 默认 md=768、lg=1024，直接套会让「侧栏转抽屉」在 768 提前触发、
+     「窄桌面」在 1024 提前触发，中间那 200px 区间全错。
+     所以这里把 md / lg 改写成 Gr8r 的数字，sm 本来就是 640 保持不变。
+     ⚠️ 这意味着本仓库里 md: 一律指 900px、lg: 一律指 1100px。
+        别从别的项目粘 sm:/md:/lg: 代码，断点语义不同。 */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 900px;
+  --breakpoint-lg: 1100px;
+}
+
+/* shadcn 老版组件的 calc(var(--radius) - 2px) 兜底；新版直接用 rounded-* */
+:root {
+  --radius: var(--r-sm);
+}
+
+/* ============================================================
+   降级运动：Gr8r 用 data-motion="reduce"，尊重系统偏好时两者都生效
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+:root[data-motion="reduce"] *,
+:root[data-motion="reduce"] *::before,
+:root[data-motion="reduce"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* ============================================================
+   文档站容器（仅 kitchen-sink 用，业务项目可删）
+   ============================================================ */
+@layer components {
+  .doc-shell {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .doc-gutter {
+    padding-inline: var(--gutter);
+  }
+}

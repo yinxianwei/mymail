@@ -1,0 +1,52 @@
+{
+  "name": "my-mail",
+  "private": true,
+  "packageManager": "bun@1.4.4",
+  "version": "0.3.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yinxianwei/mymail.git"
+  },
+  "homepage": "https://github.com/yinxianwei/mymail",
+  "bugs": "https://github.com/yinxianwei/mymail/issues",
+  "type": "module",
+  "description": "A local-first desktop email client built with Go, React and the native WebView.",
+  "scripts": {
+    "dev": "mygo dev",
+    "build": "mygo build",
+    "licenses": "bun scripts/collect-licenses.ts",
+    "check:repo": "python3 scripts/check-repository.py",
+    "generate": "mygo generate",
+    "dev:web": "vite --host 127.0.0.1",
+    "build:web": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "go test ./... && bun test",
+    "format": "prettier --write src tests vite.config.ts mygo.config.ts"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.6",
+    "@radix-ui/react-slot": "^1.1.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "dompurify": "^3.3.0",
+    "lucide-react": "^0.460.0",
+    "mygo-runtime": "0.6.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.0.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.14",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.0.12",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^31.0.0",
+    "mygo-cli": "0.6.3",
+    "prettier": "^3.9.10",
+    "tailwindcss": "^4.0.14",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.2"
+  }
+}

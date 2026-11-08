@@ -1,0 +1,49 @@
+name: Bug report / 问题反馈
+description: Report a reproducible problem without private email data / 提交可复现的问题
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        English / 中文均可。Do not include passwords, authorization codes, databases or private email.
+        Security vulnerability? Use SECURITY.md instead of a public issue.
+  - type: input
+    id: version
+    attributes:
+      label: App version or commit / 版本或提交
+      placeholder: e.g. 0.3.0, built from source
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: OS and architecture / 系统与架构
+      placeholder: e.g. macOS 15, Apple Silicon
+    validations:
+      required: true
+  - type: input
+    id: provider
+    attributes:
+      label: Provider and auth method / 服务商与认证方式
+      description: Only if relevant. Do not enter your email address or password.
+      placeholder: e.g. custom IMAP + app password, TLS 993 / SMTP TLS 465
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce / 复现步骤
+      description: Can this be reproduced with the built-in local demo?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior / 期望行为
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and diagnostics / 实际表现与诊断信息
+      description: Request ID, error category, sanitized screenshots or minimal logs. Never upload mail.db or a full data directory.
+    validations:
+      required: true

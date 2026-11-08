@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      `script-src` 必须带 'unsafe-inline'：邮件正文的 srcdoc 框架会继承这份策略
+      （WebKit 实测：只有父页面的策略能拦住框架内的内联脚本，子文档自己的 nonce
+      放行也无济于事），而框架里那段唯一允许运行的脚本是链接回传桥。
+      邮件自身能跑什么仍由框架文档里的 CSP（script-src 'nonce-…'）决定，两者取交集。
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https: http:; frame-src 'self' about:; connect-src 'self' ws://localhost:5173 ws://127.0.0.1:5173; object-src 'none'; base-uri 'none';"
+    />
+    <title>My Mail</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

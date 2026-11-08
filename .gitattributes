@@ -1,0 +1,11 @@
+* text=auto
+*.go text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.sh text eol=lf
+*.png binary
+*.woff2 binary
+src/mygo.ts linguist-generated=true
+bun.lock linguist-generated=true
