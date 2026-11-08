@@ -2,7 +2,7 @@
 
 基于 grweb 的 React 桌面邮箱原型。Go 负责 IMAP / SMTP、MIME 解析、SQLite 与系统凭证存储；界面通过 MyGo 自动生成的 TypeScript 客户端调用服务。
 
-当前版本 **0.3.0**（2026-11-08）：变更明细见 [CHANGELOG.md](../CHANGELOG.md)，原型尚未覆盖的部分与下一阶段顺序见文末「当前范围」及 PRD §11。
+当前公开预览版本 **0.0.1**（2026-11-08）：变更明细见 [CHANGELOG.md](../CHANGELOG.md)，原型尚未覆盖的部分与下一阶段顺序见文末「当前范围」及 PRD §11。
 
 ## 启动
 

@@ -55,7 +55,7 @@ files need a separate directory scan before they are committed.
    folders, light/dark themes, compose, attachments and quit behavior. Real
    provider acceptance is a separate, deliberate check.
 3. Commit and push the reviewed changes. Create an annotated tag matching the
-   package version, for example `v0.3.0`, **only when ready**. Push that tag.
+   package version, for example `v0.0.1`, **only when ready**. Push that tag.
 4. `Release preview` runs repository/secret/test checks and builds an ad-hoc
    signed Apple Silicon DMG. A mismatched tag/version fails before packaging.
 5. The workflow creates a **draft prerelease** with a DMG, `SHA256SUMS`, the
