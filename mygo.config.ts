@@ -39,6 +39,7 @@ export default defineConfig({
   version: "0.3.0",
   // 1024×1024 PNG; mygo turns it into the bundle .icns.
   icon: "resources/icon.png",
+  main: "./backend",
   // `mygo dev` runs devCommand and loads devUrl; `mygo build` runs
   // buildCommand and embeds frontendDist into the app.
   devUrl: "http://localhost:5173",
@@ -48,7 +49,7 @@ export default defineConfig({
   bindings: "src/mygo.ts",
   // macOS registers mailto in the bundle's CFBundleURLTypes; the app becomes
   // the system mail handler only after the user picks it as the default mail
-  // reader. Windows/Linux register at runtime in main.go.
+  // reader. Windows/Linux register at runtime in backend/main.go.
   urlSchemes: ["mailto"],
   out: "build",
   macos: {

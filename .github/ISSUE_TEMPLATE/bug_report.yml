@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         English / 中文均可。Do not include passwords, authorization codes, databases or private email.
-        Security vulnerability? Use SECURITY.md instead of a public issue.
+        Security vulnerability? Use .github/SECURITY.md instead of a public issue.
   - type: input
     id: version
     attributes:

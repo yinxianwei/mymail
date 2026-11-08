@@ -48,7 +48,7 @@ system credential store. Deleting the app does **not** automatically erase
 either location. Back up anything you need before removing local data; this
 can include drafts that have never been sent or synchronized.
 
-See [security limits](../SECURITY.md) and the
+See [security limits](../.github/SECURITY.md) and the
 [Chinese user guide](user-guide.zh-CN.md) for details.
 
 中文：当前仅验证 Apple 芯片 Mac。下载 DMG 和同一发行中的 SHA256SUMS 后校验，再安装。自动预览包未公证，被拦截时请按 Apple 文档对该应用单独处理，不要关闭系统整体防护。卸载应用不会自动删除邮件缓存、草稿和系统凭证。

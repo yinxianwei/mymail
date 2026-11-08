@@ -47,17 +47,27 @@ and WebView theme preferences can still persist independently of SQLite.
 
 ## Layout
 
+```text
+backend/        Go desktop entry, mail services and Go tests
+src/            React interface, generated bindings and styles
+tests/          Frontend regression tests
+resources/      Application icon and packaged dependency notices
+scripts/        Repository checks, license collection and demo fixtures
+docs/           User/development guides, roadmap and release notes
+.github/        Workflows, issue/PR templates and community policies
+```
+
 | Area | Responsibility |
 | --- | --- |
-| `main.go`, `desktop.go`, `mailto.go` | Lifecycle, menu bar, notifications and deep links |
-| `mail.go`, `headers.go` | IMAP/SMTP, MIME, TLS and header decoding |
-| `store.go`, `cache.go`, `manage.go` | SQLite, drafts, cache and queued mailbox changes |
-| `monitor.go`, `idle.go`, `history.go` | Polling, IDLE and historical pagination |
+| `backend/main.go`, `backend/desktop.go`, `backend/mailto.go` | Lifecycle, menu bar, notifications and deep links |
+| `backend/mail.go`, `backend/headers.go` | IMAP/SMTP, MIME, TLS and header decoding |
+| `backend/store.go`, `backend/cache.go`, `backend/manage.go` | SQLite, drafts, cache and queued mailbox changes |
+| `backend/monitor.go`, `backend/idle.go`, `backend/history.go` | Polling, IDLE and historical pagination |
 | `src/App.tsx` | Mail workspace, account setup and composer |
 | `src/mygo.ts` | Generated native bindings — do not edit manually |
 | `src/mail-html.ts`, `src/components/mail-frame.tsx` | Sanitization, isolated rendering and link bridge |
 | `src/components/ui`, `src/styles` | Shared components and Gr8r tokens |
-| `*_test.go`, `tests` | Local protocol/storage tests and frontend regressions |
+| `backend/*_test.go`, `tests` | Local protocol/storage tests and frontend regressions |
 
 Mail, credentials and persistence remain in Go. The frontend should use the
 generated client rather than create another storage/network path.

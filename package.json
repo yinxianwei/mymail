@@ -11,7 +11,7 @@
   "homepage": "https://github.com/yinxianwei/mymail",
   "bugs": "https://github.com/yinxianwei/mymail/issues",
   "type": "module",
-  "description": "A local-first desktop email client built with Go, React and the native WebView.",
+  "description": "A local-first desktop email client built with Go and React. Unified inbox, offline reading, and direct IMAP/SMTP connections.",
   "scripts": {
     "dev": "mygo dev",
     "build": "mygo build",

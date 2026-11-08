@@ -17,7 +17,7 @@ a release. Before the first push:
    in [LAUNCH.md](LAUNCH.md).
 5. Enable private vulnerability reporting, secret scanning/push protection and
    dependency alerts in GitHub settings where available. The private reporting
-   link in `SECURITY.md` needs the repository setting to be enabled.
+   link in `.github/SECURITY.md` needs the repository setting to be enabled.
 6. Protect `main` with required PR checks: **Repository checks**, **Frontend tests
    and build**, **macOS tests and package**, and **Scan Git history for secrets**.
    Configure these after the check names have appeared on the first run.

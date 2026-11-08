@@ -7,7 +7,7 @@ They are ready to use after the repository and first preview actually exist.
 
 **Description**
 
-> A local-first desktop email client built with Go + React. Unified inbox, offline reading, IMAP/SMTP, native WebView. 本地优先桌面邮箱。
+> A local-first desktop email client built with Go and React. Unified inbox, offline reading, and direct IMAP/SMTP connections.
 
 **Website**
 

@@ -70,7 +70,7 @@ const modules = execFileSync(
     "-deps",
     "-f",
     "{{if .Module}}{{.Module.Path}}\t{{.Module.Version}}\t{{.Module.Dir}}{{end}}",
-    ".",
+    "./backend",
   ],
   { cwd: root, encoding: "utf8" },
 );

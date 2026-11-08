@@ -1,5 +1,7 @@
 # 开发约束
 
+- Go 桌面入口、服务与 Go 测试统一放在 `backend/`；前端放在 `src/`，前端测试放在 `tests/`。`mygo.config.ts` 的 `main` 指向 `./backend`；新增 Go 服务文件不要放回根目录。
+
 - 结构探索使用已安装的 codebase-memory skill。索引后检查所依赖文件的覆盖情况。
 - 前端沿用 grweb 的 Gr8r 设计规范；所需控件、字体与样式已包含在本仓库，不依赖另一个本地目录。颜色、字号、尺寸优先使用 `src/styles/tokens.css` 和 `theme.css`。默认控件高 30px；md 断点 900px，lg 1100px。
 - 通用控件复用 `src/components/ui/`；不要在业务页面另造按钮、输入框和弹层。

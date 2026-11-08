@@ -11,7 +11,7 @@
   English · <a href="README.zh-CN.md">简体中文</a><br>
   <a href="https://github.com/yinxianwei/mymail/releases">Downloads</a> ·
   <a href="docs/ROADMAP.md">Roadmap</a> ·
-  <a href="CONTRIBUTING.md">Contribute</a> ·
+  <a href=".github/CONTRIBUTING.md">Contribute</a> ·
   <a href="https://github.com/yinxianwei/mymail/issues">Feedback</a>
 </p>
 
@@ -102,13 +102,13 @@ Email HTML is sanitized with DOMPurify and rendered in an opaque-origin sandbox
 with CSP. Sender scripts are removed. **Remote images can still disclose that a
 message was opened:** the current default trusts common provider/account domains,
 and that trust does not verify SPF, DKIM or DMARC. Set remote images to **never**
-in preferences for stricter behavior. See [security policy](SECURITY.md).
+in preferences for stricter behavior. See [security policy](.github/SECURITY.md).
 
 ## Help build it
 
 The most useful contributions right now are provider compatibility reports,
 reproducible bugs, accessibility fixes and platform testing. Start with the
-[roadmap](docs/ROADMAP.md) and [contribution guide](CONTRIBUTING.md).
+[roadmap](docs/ROADMAP.md) and [contribution guide](.github/CONTRIBUTING.md).
 
 If My Mail is useful to you, a **Star** helps others discover it. Sharing a
 real experience or a useful issue helps just as much.
@@ -120,4 +120,4 @@ real experience or a useful issue helps just as much.
 [Emersion's mail libraries](https://github.com/emersion),
 [modernc SQLite](https://pkg.go.dev/modernc.org/sqlite), Radix, Tailwind CSS,
 DOMPurify, Lucide and Geist. Their licenses remain in effect; see
-[third-party notices](THIRD_PARTY_NOTICES.md).
+[third-party notices](docs/THIRD_PARTY_NOTICES.md).

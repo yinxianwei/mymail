@@ -11,7 +11,7 @@
   <a href="README.md">English</a> · 简体中文<br>
   <a href="https://github.com/yinxianwei/mymail/releases">下载</a> ·
   <a href="docs/ROADMAP.md">路线图</a> ·
-  <a href="CONTRIBUTING.md">参与贡献</a> ·
+  <a href=".github/CONTRIBUTING.md">参与贡献</a> ·
   <a href="https://github.com/yinxianwei/mymail/issues">反馈问题</a>
 </p>
 
@@ -74,14 +74,14 @@ bun run build         # 桌面应用与 DMG，附带依赖许可证
 
 邮件缓存和草稿位于本机 SQLite，**应用没有对数据库额外加密**；凭证单独存入系统凭证库。诊断日志不记录密码、授权码、邮箱地址或邮件内容。
 
-邮件 HTML 经 DOMPurify 清洗，放在不透明源的 sandbox 与 CSP 中显示，邮件自身的脚本会被移除。**远程图片仍可能向发件人透露打开邮件的时间等信息**：当前默认信任常见服务商与账号域名，但没有验证 SPF / DKIM / DMARC。需要更严格的行为时，可在设置里将远程图片改为“从不加载”。更多内容见[安全说明](SECURITY.md)。
+邮件 HTML 经 DOMPurify 清洗，放在不透明源的 sandbox 与 CSP 中显示，邮件自身的脚本会被移除。**远程图片仍可能向发件人透露打开邮件的时间等信息**：当前默认信任常见服务商与账号域名，但没有验证 SPF / DKIM / DMARC。需要更严格的行为时，可在设置里将远程图片改为“从不加载”。更多内容见[安全说明](.github/SECURITY.md)。
 
 ## 一起完善它
 
-目前最需要真实服务商兼容性反馈、可复现的问题、无障碍改进和平台测试。可以从[路线图](docs/ROADMAP.md)与[贡献指南](CONTRIBUTING.md)开始。
+目前最需要真实服务商兼容性反馈、可复现的问题、无障碍改进和平台测试。可以从[路线图](docs/ROADMAP.md)与[贡献指南](.github/CONTRIBUTING.md)开始。
 
 如果这个项目对你有用，欢迎点个 **Star**，让更多人发现它；一条真实的使用反馈同样很有帮助。
 
 ## 协议与致谢
 
-采用 [MIT 协议](LICENSE)。感谢 [MyGo](https://github.com/egoist/mygo)、[React](https://react.dev)、[grweb](https://github.com/yinxianwei/grweb)、[Emersion 邮件库](https://github.com/emersion)、[modernc SQLite](https://pkg.go.dev/modernc.org/sqlite)、Radix、Tailwind CSS、DOMPurify、Lucide 和 Geist。第三方代码与字体保留各自的许可证，见[第三方声明](THIRD_PARTY_NOTICES.md)。
+采用 [MIT 协议](LICENSE)。感谢 [MyGo](https://github.com/egoist/mygo)、[React](https://react.dev)、[grweb](https://github.com/yinxianwei/grweb)、[Emersion 邮件库](https://github.com/emersion)、[modernc SQLite](https://pkg.go.dev/modernc.org/sqlite)、Radix、Tailwind CSS、DOMPurify、Lucide 和 Geist。第三方代码与字体保留各自的许可证，见[第三方声明](docs/THIRD_PARTY_NOTICES.md)。

@@ -18,7 +18,7 @@ local mail without credentials.
 block opening it. See the [installation guide](https://github.com/yinxianwei/mymail/blob/main/docs/INSTALL.md); do not disable
 system-wide security protections. No Intel Mac / Windows / Linux compatibility
 is promised. OAuth2 is not implemented. SQLite is not encrypted by the app;
-read the [security policy](https://github.com/yinxianwei/mymail/blob/main/SECURITY.md) before using a real mailbox.
+read the [security policy](https://github.com/yinxianwei/mymail/blob/main/.github/SECURITY.md) before using a real mailbox.
 
 中文：此预览包仅面向 Apple 芯片 Mac，未经过 Apple 公证；先校验下载文件，再按安装文档操作。欢迎使用示例数据体验，真实邮箱凭证只在应用内输入。反馈前请删除日志和截图里的私人信息。
 

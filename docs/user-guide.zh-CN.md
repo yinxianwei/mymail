@@ -63,30 +63,30 @@ macOS 构建位于 `build/darwin-arm64/My Mail.app`，可直接打开。安装�
 默认数据目录使用 MyGo 的用户数据目录，macOS 为 `~/Library/Application Support/My Mail/`，其中 `mail.db` 存放账号配置、邮件缓存与草稿。邮件数据库未做额外应用层加密，凭证使用独立的系统凭证库。可通过 `MYMAIL_DATA_DIR` 指定隔离的原型数据目录。
 
 ```text
-main.go                 桌面生命周期、单实例与服务绑定
-store.go                SQLite、缓存、附件、草稿与本地示例
-mail.go                 IMAP / SMTP、MIME、凭证与安全连接
-manage.go              邮件管理、偏好设置与待同步操作队列
-cache.go                缓存统计、容量上限与淘汰
-mailto.go               mailto 深链解析与 compose-mail 事件
-desktop.go              菜单栏模板图标、托盘菜单与桌面通知
-idle.go                 IMAP IDLE 推送长连接
-monitor.go              后台轮询、未读数与新邮件通知
-history.go              UID 分页加载更早邮件头并写入本地缓存
+backend/main.go                 桌面生命周期、单实例与服务绑定
+backend/store.go                SQLite、缓存、附件、草稿与本地示例
+backend/mail.go                 IMAP / SMTP、MIME、凭证与安全连接
+backend/manage.go              邮件管理、偏好设置与待同步操作队列
+backend/cache.go                缓存统计、容量上限与淘汰
+backend/mailto.go               mailto 深链解析与 compose-mail 事件
+backend/desktop.go              菜单栏模板图标、托盘菜单与桌面通知
+backend/idle.go                 IMAP IDLE 推送长连接
+backend/monitor.go              后台轮询、未读数与新邮件通知
+backend/history.go              UID 分页加载更早邮件头并写入本地缓存
 src/App.tsx             邮箱三栏、账号表单与写信窗口
 src/lib/history.ts      历史分页的合并、游标与多账号窗口计算
 src/mygo.ts             自动生成的 IPC 类型和客户端
 src/mail-html.ts        HTML 白名单、CSP 文档与链接提取
 src/components/ui/      从 grweb 继承的基础控件
 src/styles/             从 grweb 继承的 token 与邮件界面样式
-mail_test.go            本地恢复、中文编码与输入安全测试
-manage_test.go          设置、草稿槽位、附件 MIME、队列与 IMAP 写入测试
-cache_test.go           分区淘汰、待同步队列保护与孤儿附件清理
-mailto_test.go          mailto 编码、头注入与事件投递测试
+backend/mail_test.go            本地恢复、中文编码与输入安全测试
+backend/manage_test.go          设置、草稿槽位、附件 MIME、队列与 IMAP 写入测试
+backend/cache_test.go           分区淘汰、待同步队列保护与孤儿附件清理
+backend/mailto_test.go          mailto 编码、头注入与事件投递测试
 tests/stage3.test.tsx   虚拟滚动、缓存设置与 mailto 深链的前端用例
-idle_test.go            IDLE 退避与刷新间隔测试
-history_test.go         分页缓存与后续同步保留历史页的测试
-protocol_test.go        本地 TLS / STARTTLS IMAP 与 SMTP 联调
+backend/idle_test.go            IDLE 退避与刷新间隔测试
+backend/history_test.go         分页缓存与后续同步保留历史页的测试
+backend/protocol_test.go        本地 TLS / STARTTLS IMAP 与 SMTP 联调
 tests/mail-html.test.ts HTML 安全测试
 tests/history.test.tsx  滚动加载更早邮件与短列表自动填充测试
 ```

@@ -13,12 +13,12 @@ useful as a code contribution.
   operations passed. Never attach an authorization code, mailbox database or
   unredacted email. A connection test alone does not prove send/receive support.
 - Security vulnerabilities: follow [SECURITY.md](SECURITY.md), not a public issue.
-- Check the [roadmap](docs/ROADMAP.md) before proposing a large change. Platform
+- Check the [roadmap](../docs/ROADMAP.md) before proposing a large change. Platform
   support, OAuth and synchronization changes benefit from an issue first.
 
 ## Development
 
-See [development setup](docs/DEVELOPMENT.md). Use a separate `MYMAIL_DATA_DIR`
+See [development setup](../docs/DEVELOPMENT.md). Use a separate `MYMAIL_DATA_DIR`
 for development and synthetic addresses such as `you@example.invalid` in tests.
 Only test real sends when you explicitly intend to deliver that email.
 
