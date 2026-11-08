@@ -3,7 +3,7 @@
 The currently validated desktop target is **macOS Apple Silicon (arm64)**.
 There is no validated Intel Mac, Windows or Linux desktop release yet. The
 interface supports English and Simplified Chinese. Choose a language in
-Account settings → Language, or follow the system language. Use a recent macOS/WebKit; older WebViews have not been
+Account settings → General → Language, or follow the system language. Use a recent macOS/WebKit; older WebViews have not been
 qualified for the Tailwind 4 interface.
 
 ## Download and verify

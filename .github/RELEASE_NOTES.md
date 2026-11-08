@@ -1,11 +1,22 @@
-## My Mail — early preview / 早期预览
+## My Mail 0.0.2 — Preview / 预览版
 
-A local-first desktop email client built with Go + React and the system WebView.
-This preview targets **macOS Apple Silicon (arm64)**. The app supports English and Simplified Chinese (Settings → Language).
+A lightweight, local-first desktop email client built with **MyGo + React** and the system WebView. This preview targets **macOS Apple Silicon (arm64)**.
 
-- Multiple accounts and a unified inbox; cached mail can be read offline.
-- Reply/forward, per-message local drafts, attachments, Cc/Bcc and keyboard send.
-- Menu bar unread count and notifications, with IMAP IDLE/polling.
+### What's new
+
+- Preview images, paginated PDFs and text attachments locally. Click a filename to download; cached attachments also work offline.
+- Switch the sending account while composing, keeping recipients, body, quoted content and attachments intact.
+- Choose English, Simplified Chinese or the system language in **Account settings → General → Language**.
+- Find all local drafts in one place and filter cached mail by unread, starred or attachment status.
+- Navigate settings through sidebar categories. Gr8r controls are now consistent across the interface, with fixed nested scrolling and aligned toolbars.
+
+### 本次更新
+
+- 附件支持图片、PDF 翻页和文本预览；点击文件名即可下载，缓存附件可离线使用。
+- 写信时可切换发件账号，保留收件人、正文、引用与附件，选择随本机草稿保存。
+- 新增中英文界面与跟随系统语言，菜单栏和通知同步切换。
+- 新增本地草稿管理，以及未读、星标、附件筛选，范围为已缓存邮件。
+- 设置拆分为侧边分类，统一 Gr8r 控件样式，修复双层滚动与两行控件对齐。
 
 ### Install / 安装
 

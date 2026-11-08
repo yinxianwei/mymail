@@ -36,7 +36,7 @@ function signingIdentity() {
 export default defineConfig({
   name: "My Mail",
   identifier: "dev.mymail.desktop",
-  version: "0.0.1",
+  version: "0.0.2",
   // 1024×1024 PNG; mygo turns it into the bundle .icns.
   icon: "resources/icon.png",
   main: "./backend",
