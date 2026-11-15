@@ -54,6 +54,7 @@ export function NovaRail({
 
   return (
     <nav className="nova-rail" aria-label={t("收件箱")}>
+      <div className="nova-rail-drag" aria-hidden="true" />
       <div className="nova-rail-top">
         <button
           type="button"

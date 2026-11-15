@@ -959,7 +959,7 @@ export function App() {
       <aside
         className={
           "mail-sidebar " +
-          (isNova && !foldersOpen ? "nova-sidebar-collapsed" : "")
+          (isNova ? (foldersOpen ? "nova-sidebar-open" : "nova-sidebar-collapsed") : "")
         }
       >
         <Button
