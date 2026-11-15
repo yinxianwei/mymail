@@ -132,7 +132,9 @@
   height: 52px;
   min-height: 52px;
   padding: 0 16px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 14px;
   align-items: center;
   border-bottom: none;
   background: transparent;
@@ -143,9 +145,57 @@
 
 :root[data-theme^="card"] .mail-topbar .breadcrumb,
 :root[data-theme^="nova"] .mail-topbar .breadcrumb {
+  grid-column: 1;
   display: flex;
   align-items: center;
   gap: 8px;
+  -webkit-app-region: no-drag;
+}
+
+:root[data-theme^="card"] .mail-topbar .reader-actions,
+:root[data-theme^="nova"] .mail-topbar .reader-actions {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+  padding: 0 4px;
+  border-bottom: none;
+  background: transparent;
+  -webkit-app-region: no-drag;
+}
+
+:root[data-theme^="card"] .mail-topbar .reader-action,
+:root[data-theme^="nova"] .mail-topbar .reader-action {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: var(--text-2);
+  background: transparent;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:root[data-theme^="card"] .mail-topbar .reader-action:hover:not(:disabled),
+:root[data-theme^="nova"] .mail-topbar .reader-action:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--hover);
+}
+
+:root[data-theme^="card"] .mail-topbar .reader-action.flagged,
+:root[data-theme^="nova"] .mail-topbar .reader-action.flagged {
+  color: #f59e0b;
+}
+
+:root[data-theme^="card"] .mail-topbar .reader-action-divider,
+:root[data-theme^="nova"] .mail-topbar .reader-action-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
 }
 
 :root[data-theme^="card"] .mail-topbar .breadcrumb strong,
@@ -386,26 +436,16 @@
   gap: 0;
 }
 
-:root[data-theme^="card"] .reader-actions,
-:root[data-theme^="nova"] .reader-actions {
-  height: 52px;
-  min-height: 52px;
-  padding: 0 20px;
-  border-bottom: 1px solid var(--divider);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  box-sizing: border-box;
-}
-
 :root[data-theme^="card"] .reader-subject,
 :root[data-theme^="nova"] .reader-subject {
-  padding: 24px 28px 16px;
+  padding: 24px 28px 14px;
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 650;
+  letter-spacing: -0.3px;
   line-height: 1.35;
   color: var(--text);
   margin: 0;
+  word-break: break-word;
 }
 
 :root[data-theme^="card"] .reader-card,
@@ -527,5 +567,21 @@
     grid-template-columns: minmax(0, 1fr);
     margin: 0 12px 12px 12px;
     gap: 0;
+  }
+
+  :root[data-theme^="card"] .mail-topbar,
+  :root[data-theme^="nova"] .mail-topbar {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0 12px;
+  }
+
+  :root[data-theme^="card"] .mail-topbar.has-message .breadcrumb,
+  :root[data-theme^="nova"] .mail-topbar.has-message .breadcrumb {
+    display: none;
+  }
+
+  :root[data-theme^="card"] .mail-topbar.has-message .reader-actions,
+  :root[data-theme^="nova"] .mail-topbar.has-message .reader-actions {
+    grid-column: 1;
   }
 }

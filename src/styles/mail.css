@@ -172,6 +172,14 @@
   border-bottom: 1px solid var(--border);
   font-size: 12px;
 }
+.mail-topbar .reader-actions {
+  margin-left: auto;
+  height: auto;
+  padding: 0;
+  background: transparent;
+  border-bottom: none;
+  gap: 6px;
+}
 .breadcrumb {
   display: flex;
   align-items: center;

@@ -990,7 +990,7 @@ export function App() {
       </aside>
       <main className="mail-main">
         {account && (
-          <header className="mail-topbar">
+          <header className={"mail-topbar" + (message ? " has-message" : "")}>
             <div className="breadcrumb">
               <strong>
                 {unified
@@ -1027,6 +1027,93 @@ export function App() {
                 />
               </IconButton>
             </div>
+            {message && (
+              <div className="reader-actions">
+                <IconButton
+                  className="reader-back"
+                  label={t("返回邮件列表")}
+                  onClick={() => {
+                    ++readGeneration.current;
+                    setMessage(null);
+                    setReading(false);
+                  }}
+                >
+                  <ArrowLeft />
+                </IconButton>
+                <IconButton
+                  className="reader-action"
+                  label={t("回复")}
+                  disabled={reading}
+                  onClick={() => replyTo("reply")}
+                >
+                  <Reply />
+                </IconButton>
+                <IconButton
+                  className="reader-action"
+                  label={t("回复全部")}
+                  disabled={reading}
+                  onClick={() => replyTo("replyAll")}
+                >
+                  <ReplyAll />
+                </IconButton>
+                <IconButton
+                  className="reader-action"
+                  label={t("转发")}
+                  disabled={reading}
+                  onClick={() => replyTo("forward")}
+                >
+                  <Forward />
+                </IconButton>
+                <span className="reader-action-divider" />
+                <IconButton
+                  className={
+                    "reader-action" + (message.flagged ? " flagged" : "")
+                  }
+                  label={message.flagged ? t("取消星标") : t("加星标")}
+                  active={message.flagged}
+                  disabled={reading || !!managing}
+                  onClick={() =>
+                    void runManage(
+                      () => api.setFlagged(message.id, !message.flagged),
+                      false,
+                    )
+                  }
+                >
+                  <Star
+                    fill={message.flagged ? "currentColor" : "none"}
+                  />
+                </IconButton>
+                <IconButton
+                  className="reader-action"
+                  label={message.seen ? t("标记为未读") : t("标记为已读")}
+                  disabled={reading || !!managing}
+                  onClick={() =>
+                    void runManage(
+                      () => api.setSeen(message.id, !message.seen),
+                      message.seen,
+                    )
+                  }
+                >
+                  {message.seen ? <MailOpen /> : <Mail />}
+                </IconButton>
+                <IconButton
+                  className="reader-action"
+                  label={t("移动到文件夹")}
+                  disabled={reading || !!managing}
+                  onClick={openMove}
+                >
+                  <FolderInput />
+                </IconButton>
+                <IconButton
+                  className="reader-action"
+                  label={inTrash ? t("永久删除") : t("删除邮件")}
+                  disabled={reading || !!managing}
+                  onClick={() => setManageTarget("delete")}
+                >
+                  <Trash2 />
+                </IconButton>
+              </div>
+            )}
           </header>
         )}
         {(error || notice) && (
@@ -1285,91 +1372,6 @@ export function App() {
               <section className="message-reader" aria-label={t("邮件正文")}>
                 {message ? (
                   <div className="reader-shell">
-                    <div className="reader-actions">
-                      <IconButton
-                        className="reader-back"
-                        label={t("返回邮件列表")}
-                        onClick={() => {
-                          ++readGeneration.current;
-                          setMessage(null);
-                          setReading(false);
-                        }}
-                      >
-                        <ArrowLeft />
-                      </IconButton>
-                      <IconButton
-                        className="reader-action"
-                        label={t("回复")}
-                        disabled={reading}
-                        onClick={() => replyTo("reply")}
-                      >
-                        <Reply />
-                      </IconButton>
-                      <IconButton
-                        className="reader-action"
-                        label={t("回复全部")}
-                        disabled={reading}
-                        onClick={() => replyTo("replyAll")}
-                      >
-                        <ReplyAll />
-                      </IconButton>
-                      <IconButton
-                        className="reader-action"
-                        label={t("转发")}
-                        disabled={reading}
-                        onClick={() => replyTo("forward")}
-                      >
-                        <Forward />
-                      </IconButton>
-                      <span className="reader-action-divider" />
-                      <IconButton
-                        className={
-                          "reader-action" + (message.flagged ? " flagged" : "")
-                        }
-                        label={message.flagged ? t("取消星标") : t("加星标")}
-                        active={message.flagged}
-                        disabled={reading || !!managing}
-                        onClick={() =>
-                          void runManage(
-                            () => api.setFlagged(message.id, !message.flagged),
-                            false,
-                          )
-                        }
-                      >
-                        <Star
-                          fill={message.flagged ? "currentColor" : "none"}
-                        />
-                      </IconButton>
-                      <IconButton
-                        className="reader-action"
-                        label={message.seen ? t("标记为未读") : t("标记为已读")}
-                        disabled={reading || !!managing}
-                        onClick={() =>
-                          void runManage(
-                            () => api.setSeen(message.id, !message.seen),
-                            message.seen,
-                          )
-                        }
-                      >
-                        {message.seen ? <MailOpen /> : <Mail />}
-                      </IconButton>
-                      <IconButton
-                        className="reader-action"
-                        label={t("移动到文件夹")}
-                        disabled={reading || !!managing}
-                        onClick={openMove}
-                      >
-                        <FolderInput />
-                      </IconButton>
-                      <IconButton
-                        className="reader-action"
-                        label={inTrash ? t("永久删除") : t("删除邮件")}
-                        disabled={reading || !!managing}
-                        onClick={() => setManageTarget("delete")}
-                      >
-                        <Trash2 />
-                      </IconButton>
-                    </div>
                     <div className="reader-scroll" ref={readerScroll}>
                       <h1 className="reader-subject">
                         {message.subject || t("（无主题）")}
