@@ -7,6 +7,11 @@
 :root[data-theme^="card"] .mail-app,
 :root[data-theme^="nova"] .mail-app {
   background: var(--bg);
+  height: 100dvh;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: var(--sidebar-width, 240px) minmax(0, 1fr);
+  overflow: hidden;
 }
 
 /* 2. 侧边栏：大圆角与卡片化控件 */
@@ -14,49 +19,68 @@
 :root[data-theme^="nova"] .mail-sidebar {
   background: var(--bg-side);
   border-right: 1px solid var(--border);
+  padding: max(var(--titlebar, 0px), 52px) 14px 14px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  box-sizing: border-box;
 }
 
-:root[data-theme^="card"] .account-switch,
-:root[data-theme^="nova"] .account-switch {
-  border-radius: 14px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
-  transition: all 120ms ease;
-}
-
-:root[data-theme^="card"] .account-switch:hover,
-:root[data-theme^="nova"] .account-switch:hover {
-  background: var(--surface-2);
-}
-
-:root[data-theme^="card"] .account-avatar,
-:root[data-theme^="nova"] .account-avatar {
-  border-radius: 10px;
-}
-
+/* 写邮件：深色胶囊药丸按钮 */
 :root[data-theme^="card"] .compose-button,
 :root[data-theme^="nova"] .compose-button {
   border-radius: 9999px;
   height: 38px;
-  font-weight: 500;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+  font-weight: 550;
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+  border: none;
   transition: transform 120ms ease, box-shadow 120ms ease;
+  margin-bottom: 8px;
+  width: 100%;
 }
 
 :root[data-theme^="card"] .compose-button:hover,
 :root[data-theme^="nova"] .compose-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
 }
 
+:root[data-theme^="card"] .local-drafts-button,
+:root[data-theme^="nova"] .local-drafts-button {
+  border-radius: 10px;
+  height: 34px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+/* 文件夹与账号行：轻圆角与悬浮反馈 */
+:root[data-theme^="card"] .folder-tree-row,
+:root[data-theme^="nova"] .folder-tree-row,
 :root[data-theme^="card"] .folder-item,
 :root[data-theme^="nova"] .folder-item {
   border-radius: 10px;
-  padding: 8px 12px;
+  min-height: 34px;
+  padding: 0 8px;
+  margin: 1px 0;
   transition: background 120ms ease, color 120ms ease;
 }
 
+:root[data-theme^="card"] .folder-tree-row:hover,
+:root[data-theme^="nova"] .folder-tree-row:hover,
+:root[data-theme^="card"] .folder-item:hover,
+:root[data-theme^="nova"] .folder-item:hover {
+  background: var(--surface-2);
+}
+
+:root[data-theme^="card"] .folder-tree-row.selected,
+:root[data-theme^="nova"] .folder-tree-row.selected,
 :root[data-theme^="card"] .folder-item.selected,
 :root[data-theme^="nova"] .folder-item.selected {
   background: var(--surface);
@@ -65,17 +89,93 @@
   font-weight: 600;
 }
 
-/* 3. 工作区：悬浮卡片效果 */
+:root[data-theme^="card"] .folder-unread,
+:root[data-theme^="nova"] .folder-unread {
+  background: var(--surface-2);
+  color: var(--text-2);
+  border-radius: 9999px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 550;
+}
+
+:root[data-theme^="card"] .sidebar-bottom,
+:root[data-theme^="nova"] .sidebar-bottom {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* 3. 主区域顶部栏 (macOS 标题拖拽区与优雅标题) */
+:root[data-theme^="card"] .mail-main,
+:root[data-theme^="nova"] .mail-main {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+:root[data-theme^="card"] .mail-topbar,
+:root[data-theme^="nova"] .mail-topbar {
+  height: 52px;
+  min-height: 52px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: none;
+  background: transparent;
+  --app-region: drag;
+  -webkit-app-region: drag;
+  flex-shrink: 0;
+}
+
+:root[data-theme^="card"] .mail-topbar .breadcrumb strong,
+:root[data-theme^="nova"] .mail-topbar .breadcrumb strong {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+
+:root[data-theme^="card"] .mail-topbar .topbar-dot,
+:root[data-theme^="nova"] .mail-topbar .topbar-dot {
+  color: var(--text-4);
+  margin: 0 6px;
+  font-size: 14px;
+}
+
+:root[data-theme^="card"] .mail-topbar .topbar-count,
+:root[data-theme^="nova"] .mail-topbar .topbar-count {
+  font-size: 13px;
+  color: var(--text-3);
+  font-weight: 450;
+}
+
+:root[data-theme^="card"] .mail-topbar .topbar-status,
+:root[data-theme^="nova"] .mail-topbar .topbar-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 4. 工作区：优雅双悬浮卡片 */
 :root[data-theme^="card"] .mail-workspace,
 :root[data-theme^="nova"] .mail-workspace {
-  margin: 0 var(--gutter) 16px var(--gutter);
+  margin: 0 16px 16px 16px;
   background: transparent;
   border: none;
   border-radius: 0;
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr);
+  grid-template-columns: 360px minmax(0, 1fr);
   gap: 14px;
   overflow: hidden;
+  height: calc(100dvh - 52px - 16px);
+  min-height: 0;
+  flex: 1;
 }
 
 :root[data-theme^="card"] .message-list,
@@ -83,7 +183,9 @@
   background: var(--surface);
   border-radius: 16px;
   border: 1px solid var(--border);
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.02);
+  box-shadow:
+    0 4px 20px -2px rgba(15, 23, 42, 0.05),
+    0 1px 3px rgba(15, 23, 42, 0.02);
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -96,7 +198,9 @@
   background: var(--surface);
   border-radius: 16px;
   border: 1px solid var(--border);
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.02);
+  box-shadow:
+    0 4px 20px -2px rgba(15, 23, 42, 0.05),
+    0 1px 3px rgba(15, 23, 42, 0.02);
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -104,7 +208,6 @@
   overflow: hidden;
 }
 
-/* 深色模式下的阴影强化 */
 :root[data-theme="card-dark"] .message-list,
 :root[data-theme="card-dark"] .message-reader,
 :root[data-theme="nova-dark"] .message-list,
@@ -112,20 +215,42 @@
   box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--border);
 }
 
-/* 4. 邮件列表项卡片圆角风格 */
+/* 5. 邮件列表内控件与发件人头像卡片行 */
+:root[data-theme^="card"] .list-toolbar,
+:root[data-theme^="nova"] .list-toolbar {
+  display: none;
+}
+
 :root[data-theme^="card"] .list-search,
 :root[data-theme^="nova"] .list-search {
-  padding: 12px 14px;
+  padding: 12px 14px 6px;
 }
 
 :root[data-theme^="card"] .list-search input,
 :root[data-theme^="nova"] .list-search input {
-  border-radius: 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  height: 32px;
+  font-size: 12.5px;
+}
+
+:root[data-theme^="card"] .list-search input:focus,
+:root[data-theme^="nova"] .list-search input:focus {
+  background: var(--surface);
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+:root[data-theme^="card"] .message-filters,
+:root[data-theme^="nova"] .message-filters {
+  padding: 6px 14px 10px;
+  border-bottom: 1px solid var(--divider);
 }
 
 :root[data-theme^="card"] .message-virtual,
 :root[data-theme^="nova"] .message-virtual {
-  padding: 6px 0;
+  padding: 4px 0;
 }
 
 :root[data-theme^="card"] .message-row,
@@ -133,8 +258,15 @@
   margin: 0 8px;
   width: calc(100% - 16px);
   border-radius: 10px;
-  border-bottom: 1px solid var(--divider);
-  transition: all 120ms ease;
+  border-bottom: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  transition: background 120ms ease, box-shadow 120ms ease;
+  text-align: left;
+  position: relative;
+  box-sizing: border-box;
 }
 
 :root[data-theme^="card"] .message-row:hover,
@@ -145,39 +277,163 @@
 :root[data-theme^="card"] .message-row.active,
 :root[data-theme^="nova"] .message-row.active {
   background: var(--surface-2);
-  border-color: var(--border);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 0 0 1px var(--border);
 }
 
 :root[data-theme^="card"] .message-row.active::before,
 :root[data-theme^="nova"] .message-row.active::before {
-  border-radius: 4px;
-  left: 3px;
-  top: 8px;
-  bottom: 8px;
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 10px;
+  bottom: 10px;
   width: 3px;
+  border-radius: 9999px;
+  background: var(--accent);
 }
 
-/* 5. 邮件阅读器卡片细节 */
-:root[data-theme^="card"] .reader-toolbar,
-:root[data-theme^="nova"] .reader-toolbar {
-  border-bottom: 1px solid var(--border);
-  padding: 0 16px;
+:root[data-theme^="card"] .message-avatar,
+:root[data-theme^="nova"] .message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: 13.5px;
+  flex-shrink: 0;
+  position: relative;
+  user-select: none;
+}
+
+:root[data-theme^="card"] .message-content,
+:root[data-theme^="nova"] .message-content {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+:root[data-theme^="card"] .message-row-top,
+:root[data-theme^="nova"] .message-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+:root[data-theme^="card"] .message-row-top strong,
+:root[data-theme^="nova"] .message-row-top strong {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:root[data-theme^="card"] .message-row-top time,
+:root[data-theme^="nova"] .message-row-top time {
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+:root[data-theme^="card"] .message-subject,
+:root[data-theme^="nova"] .message-subject {
+  font-size: 12.5px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.35;
+}
+
+:root[data-theme^="card"] .message-row .unread-dot,
+:root[data-theme^="nova"] .message-row .unread-dot {
+  position: absolute;
+  right: 10px;
+  top: 14px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+
+/* 6. 阅读器去多层嵌套，平滑展示 */
+:root[data-theme^="card"] .reader-actions,
+:root[data-theme^="nova"] .reader-actions {
+  height: 52px;
+  min-height: 52px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--divider);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+}
+
+:root[data-theme^="card"] .reader-subject,
+:root[data-theme^="nova"] .reader-subject {
+  padding: 20px 24px 12px;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text);
 }
 
 :root[data-theme^="card"] .reader-card,
 :root[data-theme^="nova"] .reader-card {
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+  margin: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
-:root[data-theme^="card"] .attachment-row,
-:root[data-theme^="nova"] .attachment-row {
-  border-radius: 10px;
+:root[data-theme^="card"] .reader-card-header,
+:root[data-theme^="nova"] .reader-card-header {
+  padding: 0 24px 16px;
+  border-bottom: 1px solid var(--divider);
 }
 
-/* 6. 弹窗、对话框与选择器的大圆角和阴影 */
+:root[data-theme^="card"] .reader-sender,
+:root[data-theme^="nova"] .reader-sender {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+:root[data-theme^="card"] .reader-sender-avatar,
+:root[data-theme^="nova"] .reader-sender-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: 15px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+:root[data-theme^="card"] .reader-sender-info,
+:root[data-theme^="nova"] .reader-sender-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+:root[data-theme^="card"] .reader-card-body,
+:root[data-theme^="nova"] .reader-card-body {
+  padding: 24px;
+}
+
+/* 7. 弹窗与选择器大圆角和阴影 */
 :root[data-theme^="card"] .modal-content,
 :root[data-theme^="card"] .dialog-panel,
 :root[data-theme^="nova"] .modal-content,
@@ -197,7 +453,7 @@
   border-radius: 20px;
 }
 
-/* 7. 移动端自适应 */
+/* 8. 响应式布局自适应 */
 @media (max-width: 900px) {
   :root[data-theme^="card"] .mail-workspace,
   :root[data-theme^="nova"] .mail-workspace {

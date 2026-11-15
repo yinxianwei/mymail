@@ -163,3 +163,20 @@ test("Legacy nova theme preferences automatically migrate to modern card themes"
   const mappedDark: ThemeId = legacyDark === "nova-dark" ? "card-dark" : "dark";
   expect(mappedDark).toBe("card-dark");
 });
+
+test("Avatar monogram and color generation is deterministic across light and dark", async () => {
+  const { getAvatarColor, getAvatarInitial } = await import("../src/lib/avatar");
+
+  expect(getAvatarInitial("DeepSeek (via Flashduty)")).toBe("D");
+  expect(getAvatarInitial("华为开发者联盟")).toBe("华");
+  expect(getAvatarInitial('"Alicia from Deel" <alicia@deel.com>')).toBe("A");
+  expect(getAvatarInitial("")).toBe("?");
+
+  const color1 = getAvatarColor("deepseek@flashduty.com", false);
+  const color2 = getAvatarColor("deepseek@flashduty.com", false);
+  expect(color1.background).toBe(color2.background);
+  expect(color1.color).toBe(color2.color);
+
+  const darkColor = getAvatarColor("deepseek@flashduty.com", true);
+  expect(darkColor.background).not.toBe(color1.background);
+});

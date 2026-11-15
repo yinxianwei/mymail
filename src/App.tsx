@@ -10,6 +10,7 @@ import { Segmented } from "./components/ui/segmented";
 import { ChoiceSelect } from "./components/ui/choice-select";
 import { t, useLocale, getLocale, setLanguagePreference } from "./lib/i18n";
 import { LanguagePreferences } from "./components/language-preferences";
+import { getAvatarColor, getAvatarInitial } from "./lib/avatar";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   Mail,
@@ -988,6 +989,45 @@ export function App() {
         </div>
       </aside>
       <main className="mail-main">
+        {account && (
+          <header className="mail-topbar">
+            <div className="breadcrumb">
+              <strong>
+                {unified
+                  ? t("所有收件箱")
+                  : folderTitle(
+                      folders.find((f) => f.name === folder) ?? {
+                        name: folder,
+                        delimiter: "",
+                        role: "",
+                        selectable: true,
+                      },
+                    )}
+              </strong>
+              <span className="topbar-dot">•</span>
+              <span className="topbar-count">
+                {visible.length} {t("封邮件")}
+              </span>
+            </div>
+            <div className="topbar-status">
+              <IconButton
+                label={
+                  busy || (unified && desktop.checking)
+                    ? t("正在同步")
+                    : t("刷新邮件")
+                }
+                disabled={!!busy || (unified && desktop.checking)}
+                onClick={() => void sync()}
+              >
+                <RefreshCw
+                  className={
+                    busy || (unified && desktop.checking) ? "spinning" : ""
+                  }
+                />
+              </IconButton>
+            </div>
+          </header>
+        )}
         {(error || notice) && (
           <div
             className={"mail-feedback " + (error ? "error" : "")}
@@ -1134,50 +1174,68 @@ export function App() {
                         transform: `translateY(${firstRow * rowHeight}px)`,
                       }}
                     >
-                      {windowRows.map((m) => (
-                        <button
-                          key={m.id}
-                          style={{ height: rowHeight }}
-                          className={
-                            "message-row " +
-                            (message?.id === m.id ? "active" : "")
-                          }
-                          aria-current={
-                            message?.id === m.id ? "true" : undefined
-                          }
-                          onClick={() => void read(m)}
-                        >
-                          <span className="message-row-top">
-                            {m.flagged && (
-                              <Star
-                                size={12}
-                                fill="currentColor"
-                                className="row-star"
-                                aria-label={t("已加星标")}
-                              />
-                            )}
-                            <strong>
-                              {m.from
-                                .replace(/<.*>/, "")
-                                .replaceAll('"', "")
-                                .trim() || m.from}
-                            </strong>
-                            <time>{dateText(m.date)}</time>
-                          </span>
-                          <span className="message-subject">
-                            {m.subject || t("（无主题）")}
-                          </span>
-                          {unified && (
-                            <span className="message-account">
-                              {accounts.find((a) => a.id === m.accountId)
-                                ?.email || t("邮箱账号")}
+                      {windowRows.map((m) => {
+                        const fromDisplay =
+                          m.from
+                            .replace(/<.*>/, "")
+                            .replaceAll('"', "")
+                            .trim() || m.from;
+                        const avatar = getAvatarColor(fromDisplay, dark);
+                        const initial = getAvatarInitial(fromDisplay);
+                        return (
+                          <button
+                            key={m.id}
+                            style={{ height: rowHeight }}
+                            className={
+                              "message-row " +
+                              (message?.id === m.id ? "active" : "")
+                            }
+                            aria-current={
+                              message?.id === m.id ? "true" : undefined
+                            }
+                            onClick={() => void read(m)}
+                          >
+                            <span
+                              className="message-avatar"
+                              style={{
+                                backgroundColor: avatar.background,
+                                color: avatar.color,
+                              }}
+                              aria-hidden="true"
+                            >
+                              {initial}
                             </span>
-                          )}
-                          {!m.seen && (
-                            <span className="unread-dot" aria-label={t("未读")} />
-                          )}
-                        </button>
-                      ))}
+                            <div className="message-content">
+                              <span className="message-row-top">
+                                <strong>{fromDisplay}</strong>
+                                <span className="message-row-meta">
+                                  {m.flagged && (
+                                    <Star
+                                      size={12}
+                                      fill="currentColor"
+                                      className="row-star"
+                                      aria-label={t("已加星标")}
+                                    />
+                                  )}
+                                  <time>{dateText(m.date)}</time>
+                                </span>
+                              </span>
+                              <span className="message-subject">
+                                {m.subject || t("（无主题）")}
+                              </span>
+                              {unified && (
+                                <span className="message-account">
+                                  {accounts.find((a) => a.id === m.accountId)
+                                    ?.email || t("邮箱账号")}
+                                </span>
+                              )}
+                            </div>
+                            {!m.seen && (
+                              <span className="unread-dot" aria-label={t("未读")} />
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                   {visible.length === 0 && (
@@ -1318,42 +1376,60 @@ export function App() {
                       <article className="reader-card">
                         <header className="reader-card-header">
                           <div className="reader-sender">
-                            <div className="reader-sender-row">
-                              <strong className="sender-name">
-                                <span
-                                  className={
-                                    "sender-trust" +
-                                    (trustedSender ? " trusted" : "")
-                                  }
-                                  title={
-                                    trustedSender
-                                      ? t("可信发件人{0}", {
-                                          0: trustNote
-                                            ? `（${trustNote}）`
-                                            : "",
-                                        })
-                                      : t("发件人未信任")
-                                  }
-                                >
-                                  {trustedSender ? (
-                                    <ShieldCheck size={14} />
-                                  ) : (
-                                    <ShieldAlert size={14} />
-                                  )}
-                                </span>
-                                {senderName(message.from)}
-                              </strong>
-                              <time>{dateTimeText(message.date)}</time>
-                            </div>
-                            <small className="reader-to">
-                              {t("发至")}
-                              {message.to}
-                            </small>
-                            {senderName(message.from) !== message.from && (
-                              <small className="reader-address">
-                                {message.from}
+                            <span
+                              className="reader-sender-avatar"
+                              style={{
+                                backgroundColor: getAvatarColor(
+                                  senderName(message.from),
+                                  dark,
+                                ).background,
+                                color: getAvatarColor(
+                                  senderName(message.from),
+                                  dark,
+                                ).color,
+                              }}
+                              aria-hidden="true"
+                            >
+                              {getAvatarInitial(senderName(message.from))}
+                            </span>
+                            <div className="reader-sender-info">
+                              <div className="reader-sender-row">
+                                <strong className="sender-name">
+                                  <span
+                                    className={
+                                      "sender-trust" +
+                                      (trustedSender ? " trusted" : "")
+                                    }
+                                    title={
+                                      trustedSender
+                                        ? t("可信发件人{0}", {
+                                            0: trustNote
+                                              ? `（${trustNote}）`
+                                              : "",
+                                          })
+                                        : t("发件人未信任")
+                                    }
+                                  >
+                                    {trustedSender ? (
+                                      <ShieldCheck size={14} />
+                                    ) : (
+                                      <ShieldAlert size={14} />
+                                    )}
+                                  </span>
+                                  {senderName(message.from)}
+                                </strong>
+                                <time>{dateTimeText(message.date)}</time>
+                              </div>
+                              <small className="reader-to">
+                                {t("发至")}
+                                {message.to}
                               </small>
-                            )}
+                              {senderName(message.from) !== message.from && (
+                                <small className="reader-address">
+                                  {message.from}
+                                </small>
+                              )}
+                            </div>
                           </div>
                           <MessageTranslation
                             key={message.id}
