@@ -10,7 +10,7 @@ require (
 	github.com/emersion/go-smtp v0.25.1
 	golang.org/x/image v0.47.0
 	golang.org/x/net v0.59.0
-	golang.org/x/text v0.43.0
+	golang.org/x/text v0.44.0
 	modernc.org/sqlite v1.61.1
 )
 
