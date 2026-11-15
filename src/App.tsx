@@ -1123,14 +1123,15 @@ export function App() {
               </div>
             )}
             <div className={"mail-workspace " + (message ? "has-message" : "")}>
-              <section className="message-list" aria-label={t("邮件列表")}>
+              <div className="nova-list-column">
                 {isNova && (
                   <NovaAiCard
                     onAction={() => setNotice(t("智能分类与摘要已就绪"))}
                   />
                 )}
-                {isNova && <NovaBanner />}
-                <div className="list-toolbar">
+                <section className="message-list" aria-label={t("邮件列表")}>
+                  {isNova && <NovaBanner />}
+                  <div className="list-toolbar">
                   <strong>
                     {unified
                       ? t("所有收件箱")
@@ -1405,7 +1406,8 @@ export function App() {
                   )}
                 </div>
               </section>
-              <section className="message-reader" aria-label={t("邮件正文")}>
+            </div>
+            <section className="message-reader" aria-label={t("邮件正文")}>
                 {message ? (
                   <div className="reader-shell">
                     <div className="reader-actions">

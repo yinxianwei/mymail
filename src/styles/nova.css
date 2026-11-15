@@ -7,8 +7,8 @@
 /* Outer app canvas */
 [data-theme^="nova"] .mail-app {
   background: var(--bg);
-  padding: 10px;
-  gap: 12px;
+  padding: 0;
+  gap: 0;
   display: flex;
   height: 100dvh;
   box-sizing: border-box;
@@ -24,16 +24,17 @@
   filter: blur(1px);
 }
 
-/* Slim Icon Rail Dock */
+/* Slim Icon Rail Dock: flush with window edge from top to bottom */
 .nova-rail {
-  width: 58px;
-  min-width: 58px;
+  width: 60px;
+  min-width: 60px;
   height: 100%;
   box-sizing: border-box;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  box-shadow: 0 2px 10px -2px rgba(15, 23, 42, 0.04);
+  border: none;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -48,7 +49,7 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 50px;
+  height: 52px;
   --app-region: drag;
   -webkit-app-region: drag;
   z-index: 25;
@@ -160,9 +161,30 @@
 [data-theme^="nova"] .mail-main {
   flex: 1;
   min-width: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  background: transparent;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* Nova Top Action Bar */
+.nova-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  min-height: 52px;
+  padding: 0 16px;
+  gap: 12px;
+  box-sizing: border-box;
+  --app-region: drag;
+  -webkit-app-region: drag;
+}
+
+.nova-topbar button {
+  --app-region: no-drag;
+  -webkit-app-region: no-drag;
 }
 
 /* Floating message workspace */
@@ -172,7 +194,19 @@
   display: grid;
   grid-template-columns: minmax(360px, 440px) minmax(0, 1fr);
   gap: 12px;
+  padding: 0 12px 12px 12px;
+  box-sizing: border-box;
   background: transparent;
+  overflow: hidden;
+}
+
+.nova-list-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 [data-theme^="nova"] .message-list {
@@ -185,6 +219,9 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+  flex: 1;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 [data-theme^="nova"] .message-reader {
@@ -193,15 +230,8 @@
   border-radius: 18px;
   box-shadow: 0 2px 10px -2px rgba(15, 23, 42, 0.04);
   overflow: hidden;
-}
-
-/* Nova Top Action Bar */
-.nova-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 6px 12px 6px;
-  gap: 12px;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .nova-topbar-title {
@@ -321,7 +351,8 @@
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 10px 16px;
-  margin-bottom: 10px;
+  margin: 0;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
