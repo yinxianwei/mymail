@@ -15,6 +15,9 @@ test("interface strings and template placeholders have English catalog entries",
     "src/components/pdf-preview.tsx",
     "src/components/ui/chip-input.tsx",
     "src/components/ui/modal.tsx",
+    "src/components/nova-rail.tsx",
+    "src/components/nova-banner.tsx",
+    "src/components/nova-ai-card.tsx",
   ];
   const missing: string[] = [];
   for (const path of paths) {

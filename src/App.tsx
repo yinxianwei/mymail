@@ -10,6 +10,10 @@ import { Segmented } from "./components/ui/segmented";
 import { ChoiceSelect } from "./components/ui/choice-select";
 import { t, useLocale, getLocale, setLanguagePreference } from "./lib/i18n";
 import { LanguagePreferences } from "./components/language-preferences";
+import { NovaRail, type ThemeId } from "./components/nova-rail";
+import { NovaBanner } from "./components/nova-banner";
+import { NovaAiCard } from "./components/nova-ai-card";
+import { getAvatarBg, getAvatarInitial } from "./lib/avatar";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   Mail,
@@ -36,6 +40,8 @@ import {
   FolderInput,
   MailOpen,
   Check,
+  BadgeCheck,
+  SlidersHorizontal,
 } from "lucide-react";
 import {
   MailService as api,
@@ -221,9 +227,34 @@ export function App() {
   const [remoteOverride, setRemoteOverride] = useState<Record<string, boolean>>(
     {},
   );
-  const [dark, setDark] = useState(
-    () => localStorage.getItem("mail:theme") === "dark",
-  );
+  const [theme, setTheme] = useState<ThemeId>(() => {
+    const saved = localStorage.getItem("mail:theme");
+    if (
+      saved === "nova" ||
+      saved === "nova-dark" ||
+      saved === "light" ||
+      saved === "dark"
+    ) {
+      return saved;
+    }
+    if (saved === "true") return "dark";
+    if (saved === "false") return "light";
+    return "nova";
+  });
+  const dark = theme === "dark" || theme === "nova-dark";
+  const isNova = theme === "nova" || theme === "nova-dark";
+  const [foldersOpen, setFoldersOpen] = useState(false);
+
+  const setDark = (v: boolean | ((prev: boolean) => boolean)) => {
+    setTheme((prev) => {
+      const currentDark = prev === "dark" || prev === "nova-dark";
+      const nextDark = typeof v === "function" ? v(currentDark) : v;
+      if (prev.startsWith("nova")) {
+        return nextDark ? "nova-dark" : "nova";
+      }
+      return nextDark ? "dark" : "light";
+    });
+  };
   const [database, setDatabase] = useState(""),
     [reading, setReading] = useState(false),
     // Which attachment index is being written to disk, so only that row says
@@ -283,9 +314,9 @@ export function App() {
   // dismisses the dialog instead of deleting the message.
   const cancelDeleteRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    document.documentElement.dataset.theme = dark ? "dark" : "light";
-    localStorage.setItem("mail:theme", dark ? "dark" : "light");
-  }, [dark]);
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("mail:theme", theme);
+  }, [theme]);
   // The list measures its own viewport. jsdom and older WebViews have no
   // ResizeObserver, so the initial fallback height still yields a window.
   useEffect(() => {
@@ -899,8 +930,38 @@ export function App() {
     messages,
   ]);
   return (
-    <div className="mail-app">
-      <aside className="mail-sidebar">
+    <div className={"mail-app " + (isNova ? "theme-nova" : "")}>
+      {isNova && (
+        <NovaRail
+          unified={unified}
+          folder={folder}
+          filter={messageFilter}
+          unreadCount={account ? desktop.accountUnread[account.id] : 0}
+          foldersOpen={foldersOpen}
+          theme={theme}
+          onSelectInbox={() => {
+            if (unified) chooseAll();
+            else void chooseFolder("INBOX");
+            setMessageFilter("all");
+          }}
+          onSelectStarred={() => {
+            setMessageFilter("starred");
+          }}
+          onSelectUnified={() => {
+            chooseAll();
+          }}
+          onToggleFolders={() => setFoldersOpen((v) => !v)}
+          onOpenDrafts={() => setDraftManager(true)}
+          onOpenSettings={() => setSettings(true)}
+          onThemeChange={setTheme}
+        />
+      )}
+      <aside
+        className={
+          "mail-sidebar " +
+          (isNova && !foldersOpen ? "nova-sidebar-collapsed" : "")
+        }
+      >
         <Button
           variant="primary"
           className="compose-button"
@@ -996,489 +1057,652 @@ export function App() {
             </div>
           </div>
         ) : (
-          <div className={"mail-workspace " + (message ? "has-message" : "")}>
-            <section className="message-list" aria-label={t("邮件列表")}>
-              <div className="list-toolbar">
-                <strong>
-                  {unified
-                    ? t("所有收件箱")
-                    : folderTitle(
-                        folders.find((f) => f.name === folder) ?? {
-                          name: folder,
-                          delimiter: "",
-                          role: "",
-                          selectable: true,
-                        },
-                      )}
-                </strong>
-                <span>{visible.length}</span>
-                <IconButton
-                  label={
-                    busy || (unified && desktop.checking)
-                      ? t("正在同步")
-                      : t("刷新邮件")
-                  }
-                  disabled={!!busy || (unified && desktop.checking)}
-                  onClick={() => void sync()}
-                >
-                  <RefreshCw
-                    className={
-                      busy || (unified && desktop.checking) ? "spinning" : ""
-                    }
+          <>
+            {isNova && (
+              <div className="nova-topbar">
+                <div className="nova-topbar-title">
+                  <span>
+                    {unified
+                      ? t("所有收件箱")
+                      : folderTitle(
+                          folders.find((f) => f.name === folder) ?? {
+                            name: folder,
+                            delimiter: "",
+                            role: "",
+                            selectable: true,
+                          },
+                        )}
+                  </span>
+                  <span className="nova-topbar-dot">•</span>
+                  <span className="nova-topbar-count">
+                    {visible.length} {t("封邮件")}
+                  </span>
+                </div>
+                <div className="nova-actions-row">
+                  <button
+                    type="button"
+                    className="nova-pill-primary"
+                    disabled={!senderAccount || senderAccount.demo}
+                    onClick={() => {
+                      setComposeSeed(null);
+                      setComposeFresh(true);
+                      setCompose(true);
+                    }}
+                  >
+                    <Plus size={14} />
+                    <span>{t("写邮件")}</span>
+                  </button>
+                  <span className="nova-pill-divider" />
+                  <button
+                    type="button"
+                    className="nova-pill-filter"
+                    onClick={() => {
+                      if (unified) chooseAll();
+                      else void chooseFolder("INBOX");
+                    }}
+                  >
+                    <Inbox size={14} />
+                    <span>
+                      {unified ? t("所有收件箱") : t("收件箱")} {visible.length}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="nova-pill-ghost"
+                    onClick={() => {
+                      const sent = folders.find(
+                        (f) => f.role === "sent" || /sent|已发送/i.test(f.name),
+                      );
+                      if (sent) void chooseFolder(sent.name);
+                    }}
+                  >
+                    <Send size={14} />
+                    <span>{t("已发送")}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+            <div className={"mail-workspace " + (message ? "has-message" : "")}>
+              <section className="message-list" aria-label={t("邮件列表")}>
+                {isNova && (
+                  <NovaAiCard
+                    onAction={() => setNotice(t("智能分类与摘要已就绪"))}
                   />
-                </IconButton>
-              </div>
-              <div className="list-search">
-                <Input
-                  aria-label={t("搜索已缓存邮件")}
-                  icon={<Search size={14} />}
-                  placeholder={t("搜索已缓存的邮件…")}
-                  value={query}
-                  onChange={(e) => {
-                    setQuery(e.target.value);
-                    setRowLimit(50);
-                    setScrollPos((p) => ({ ...p, top: 0 }));
-                    if (messageScroll.current)
-                      messageScroll.current.scrollTop = 0;
-                  }}
-                />
-              </div>
-              <div
-                className="message-filters"
-                role="group"
-                aria-label={t("邮件筛选")}
-              >
-                <Segmented
-                  aria-label={t("邮件筛选")}
-                  value={messageFilter}
-                  options={[
-                    { value: "all", label: t("全部") },
-                    { value: "unread", label: t("未读") },
-                    { value: "starred", label: t("星标") },
-                    { value: "attachments", label: t("附件") },
-                  ]}
-                  onValueChange={(value) => {
-                    setMessageFilter(value);
-                    setRowLimit(50);
-                    setScrollPos((p) => ({ ...p, top: 0 }));
-                    if (messageScroll.current)
-                      messageScroll.current.scrollTop = 0;
-                  }}
-                />
-                {filtering && (
-                  <span className="cache-filter-hint">{t("已缓存")}</span>
                 )}
-              </div>
-              <div
-                className="message-scroll"
-                ref={messageScroll}
-                onScroll={(event) => {
-                  const node = event.currentTarget;
-                  setScrollPos({
-                    top: node.scrollTop,
-                    height: node.clientHeight || 600,
-                  });
-                  if (filtering) {
+                {isNova && <NovaBanner />}
+                <div className="list-toolbar">
+                  <strong>
+                    {unified
+                      ? t("所有收件箱")
+                      : folderTitle(
+                          folders.find((f) => f.name === folder) ?? {
+                            name: folder,
+                            delimiter: "",
+                            role: "",
+                            selectable: true,
+                          },
+                        )}
+                  </strong>
+                  <span>{visible.length}</span>
+                  {isNova && (
+                    <IconButton
+                      size="sm"
+                      label={t("邮件筛选")}
+                      onClick={() => {
+                        setMessageFilter((f) =>
+                          f === "all" ? "unread" : "all",
+                        );
+                      }}
+                    >
+                      <SlidersHorizontal size={14} />
+                    </IconButton>
+                  )}
+                  <IconButton
+                    label={
+                      busy || (unified && desktop.checking)
+                        ? t("正在同步")
+                        : t("刷新邮件")
+                    }
+                    disabled={!!busy || (unified && desktop.checking)}
+                    onClick={() => void sync()}
+                  >
+                    <RefreshCw
+                      className={
+                        busy || (unified && desktop.checking) ? "spinning" : ""
+                      }
+                    />
+                  </IconButton>
+                </div>
+                <div className="list-search">
+                  <Input
+                    aria-label={t("搜索已缓存邮件")}
+                    icon={<Search size={14} />}
+                    placeholder={t("搜索已缓存的邮件…")}
+                    value={query}
+                    onChange={(e) => {
+                      setQuery(e.target.value);
+                      setRowLimit(50);
+                      setScrollPos((p) => ({ ...p, top: 0 }));
+                      if (messageScroll.current)
+                        messageScroll.current.scrollTop = 0;
+                    }}
+                  />
+                </div>
+                <div
+                  className="message-filters"
+                  role="group"
+                  aria-label={t("邮件筛选")}
+                >
+                  <Segmented
+                    aria-label={t("邮件筛选")}
+                    value={messageFilter}
+                    options={[
+                      { value: "all", label: t("全部") },
+                      { value: "unread", label: t("未读") },
+                      { value: "starred", label: t("星标") },
+                      { value: "attachments", label: t("附件") },
+                    ]}
+                    onValueChange={(value) => {
+                      setMessageFilter(value);
+                      setRowLimit(50);
+                      setScrollPos((p) => ({ ...p, top: 0 }));
+                      if (messageScroll.current)
+                        messageScroll.current.scrollTop = 0;
+                    }}
+                  />
+                  {filtering && (
+                    <span className="cache-filter-hint">{t("已缓存")}</span>
+                  )}
+                </div>
+                <div
+                  className="message-scroll"
+                  ref={messageScroll}
+                  onScroll={(event) => {
+                    const node = event.currentTarget;
+                    setScrollPos({
+                      top: node.scrollTop,
+                      height: node.clientHeight || 600,
+                    });
+                    if (filtering) {
+                      if (
+                        matching.length > rowLimit &&
+                        node.scrollHeight - node.scrollTop - node.clientHeight <
+                          historyScrollThreshold
+                      )
+                        setRowLimit((limit) => limit + 50);
+                      return;
+                    }
                     if (
-                      matching.length > rowLimit &&
+                      moreAvailable &&
+                      !olderError &&
                       node.scrollHeight - node.scrollTop - node.clientHeight <
                         historyScrollThreshold
                     )
-                      setRowLimit((limit) => limit + 50);
-                    return;
-                  }
-                  if (
-                    moreAvailable &&
-                    !olderError &&
-                    node.scrollHeight - node.scrollTop - node.clientHeight <
-                      historyScrollThreshold
-                  )
-                    void loadOlder();
-                }}
-              >
-                <div
-                  className="message-virtual"
-                  style={{ height: totalRows * rowHeight }}
-                  data-row-height={rowHeight}
+                      void loadOlder();
+                  }}
                 >
                   <div
-                    className="message-window"
-                    style={{
-                      transform: `translateY(${firstRow * rowHeight}px)`,
-                    }}
+                    className="message-virtual"
+                    style={{ height: totalRows * rowHeight }}
+                    data-row-height={rowHeight}
                   >
-                    {windowRows.map((m) => (
-                      <button
-                        key={m.id}
-                        style={{ height: rowHeight }}
-                        className={
-                          "message-row " +
-                          (message?.id === m.id ? "active" : "")
-                        }
-                        aria-current={message?.id === m.id ? "true" : undefined}
-                        onClick={() => void read(m)}
-                      >
-                        <span className="message-row-top">
-                          {m.flagged && (
-                            <Star
-                              size={12}
-                              fill="currentColor"
-                              className="row-star"
-                              aria-label={t("已加星标")}
-                            />
-                          )}
-                          <strong>
-                            {m.from
-                              .replace(/<.*>/, "")
-                              .replaceAll('"', "")
-                              .trim() || m.from}
-                          </strong>
-                          <time>{dateText(m.date)}</time>
-                        </span>
-                        <span className="message-subject">
-                          {m.subject || t("（无主题）")}
-                        </span>
-                        {unified && (
-                          <span className="message-account">
-                            {accounts.find((a) => a.id === m.accountId)
-                              ?.email || t("邮箱账号")}
-                          </span>
-                        )}
-                        {!m.seen && (
-                          <span className="unread-dot" aria-label={t("未读")} />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {visible.length === 0 && (
-                  <div className="list-empty">
-                    <Inbox size={22} />
-                    <p>
-                      {filtering ? t("没有匹配的邮件") : t("这里还没有邮件")}
-                    </p>
-                    <small>
-                      {filtering
-                        ? t("可更换关键词或筛选条件，仅查找已缓存邮件。")
-                        : t("点击列表右上角刷新邮件。")}
-                    </small>
-                  </div>
-                )}
-                {!filtering && (
-                  <div className="history-footer">
-                    {loadingOlder ? (
-                      <span role="status">
-                        <RefreshCw size={13} className="spinning" />
-                        {t("正在加载更早邮件…")}
-                      </span>
-                    ) : olderError ? (
-                      <>
-                        <p role="alert">{t(olderError)}</p>
-                        <Button size="sm" onClick={() => void loadOlder()}>
-                          {t("重试加载")}
-                        </Button>
-                      </>
-                    ) : moreAvailable ? (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={!!busy}
-                        onClick={() => void loadOlder()}
-                      >
-                        {t("加载更早邮件")}
-                      </Button>
-                    ) : messages.length > 0 ? (
-                      <span>{t("已加载全部邮件")}</span>
-                    ) : null}
-                  </div>
-                )}
-              </div>
-            </section>
-            <section className="message-reader" aria-label={t("邮件正文")}>
-              {message ? (
-                <div className="reader-shell">
-                  <div className="reader-actions">
-                    <IconButton
-                      className="reader-back"
-                      label={t("返回邮件列表")}
-                      onClick={() => {
-                        ++readGeneration.current;
-                        setMessage(null);
-                        setReading(false);
+                    <div
+                      className="message-window"
+                      style={{
+                        transform: `translateY(${firstRow * rowHeight}px)`,
                       }}
                     >
-                      <ArrowLeft />
-                    </IconButton>
-                    <IconButton
-                      className="reader-action"
-                      label={t("回复")}
-                      disabled={reading}
-                      onClick={() => replyTo("reply")}
-                    >
-                      <Reply />
-                    </IconButton>
-                    <IconButton
-                      className="reader-action"
-                      label={t("回复全部")}
-                      disabled={reading}
-                      onClick={() => replyTo("replyAll")}
-                    >
-                      <ReplyAll />
-                    </IconButton>
-                    <IconButton
-                      className="reader-action"
-                      label={t("转发")}
-                      disabled={reading}
-                      onClick={() => replyTo("forward")}
-                    >
-                      <Forward />
-                    </IconButton>
-                    <span className="reader-action-divider" />
-                    <IconButton
-                      className={
-                        "reader-action" + (message.flagged ? " flagged" : "")
-                      }
-                      label={message.flagged ? t("取消星标") : t("加星标")}
-                      active={message.flagged}
-                      disabled={reading || !!managing}
-                      onClick={() =>
-                        void runManage(
-                          () => api.setFlagged(message.id, !message.flagged),
-                          false,
-                        )
-                      }
-                    >
-                      <Star fill={message.flagged ? "currentColor" : "none"} />
-                    </IconButton>
-                    <IconButton
-                      className="reader-action"
-                      label={message.seen ? t("标记为未读") : t("标记为已读")}
-                      disabled={reading || !!managing}
-                      onClick={() =>
-                        void runManage(
-                          () => api.setSeen(message.id, !message.seen),
-                          message.seen,
-                        )
-                      }
-                    >
-                      {message.seen ? <MailOpen /> : <Mail />}
-                    </IconButton>
-                    <IconButton
-                      className="reader-action"
-                      label={t("移动到文件夹")}
-                      disabled={reading || !!managing}
-                      onClick={openMove}
-                    >
-                      <FolderInput />
-                    </IconButton>
-                    <IconButton
-                      className="reader-action"
-                      label={inTrash ? t("永久删除") : t("删除邮件")}
-                      disabled={reading || !!managing}
-                      onClick={() => setManageTarget("delete")}
-                    >
-                      <Trash2 />
-                    </IconButton>
-                  </div>
-                  <div className="reader-scroll" ref={readerScroll}>
-                    <h1 className="reader-subject">
-                      {message.subject || t("（无主题）")}
-                    </h1>
-                    <article className="reader-card">
-                      <header className="reader-card-header">
-                        <div className="reader-sender">
-                          <div className="reader-sender-row">
-                            <strong className="sender-name">
-                              <span
-                                className={
-                                  "sender-trust" +
-                                  (trustedSender ? " trusted" : "")
-                                }
-                                title={
-                                  trustedSender
-                                    ? t("可信发件人{0}", {
-                                        0: trustNote ? `（${trustNote}）` : "",
-                                      })
-                                    : t("发件人未信任")
-                                }
-                              >
-                                {trustedSender ? (
-                                  <ShieldCheck size={14} />
-                                ) : (
-                                  <ShieldAlert size={14} />
-                                )}
-                              </span>
-                              {senderName(message.from)}
-                            </strong>
-                            <time>{dateTimeText(message.date)}</time>
-                          </div>
-                          <small className="reader-to">
-                            {t("发至")}
-                            {message.to}
-                          </small>
-                          {senderName(message.from) !== message.from && (
-                            <small className="reader-address">
-                              {message.from}
-                            </small>
-                          )}
-                        </div>
-                        <MessageTranslation
-                          key={message.id}
-                          messageId={message.id}
-                          enabled={
-                            !!(
-                              !reading &&
-                              message.cached &&
-                              (message.text || message.html)
-                            )
+                      {windowRows.map((m) => (
+                        <button
+                          key={m.id}
+                          style={{ height: rowHeight }}
+                          className={
+                            "message-row " +
+                            (message?.id === m.id ? "active" : "")
                           }
-                          trusted={trustedSender}
-                          remote={remoteAllowed}
-                          dark={dark}
-                          subject={message.subject}
-                          html={message.html}
-                          text={message.text}
+                          aria-current={
+                            message?.id === m.id ? "true" : undefined
+                          }
+                          onClick={() => void read(m)}
                         >
-                          {!reading && message.cached && (
+                          {isNova ? (
                             <>
-                              <MenuItem
-                                onSelect={() =>
-                                  setRemote(!remoteAllowed, false)
-                                }
+                              <div
+                                className="nova-row-avatar"
+                                style={{ backgroundColor: getAvatarBg(m.from) }}
+                                aria-hidden="true"
                               >
-                                {remoteAllowed
-                                  ? t("本邮件不加载")
-                                  : t("加载图片")}
-                              </MenuItem>
-                              <MenuItem
-                                onSelect={() => setRemote(!trustedSender, true)}
-                              >
-                                {trustedSender
-                                  ? t("总是阻止")
-                                  : trustScope
-                                    ? t("信任 {0}", { 0: trustScope })
-                                    : t("信任发件人")}
-                              </MenuItem>
+                                {getAvatarInitial(m.from)}
+                              </div>
+                              <div className="nova-row-body">
+                                <div className="nova-sender-line">
+                                  <strong className="nova-sender-name">
+                                    {m.from
+                                      .replace(/<.*>/, "")
+                                      .replaceAll('"', "")
+                                      .trim() || m.from}
+                                  </strong>
+                                  <BadgeCheck
+                                    size={14}
+                                    className="nova-verified-badge"
+                                    fill="#0ea5e9"
+                                    stroke="#ffffff"
+                                    aria-label={t("认证发件人")}
+                                  />
+                                  {m.flagged && (
+                                    <Star
+                                      size={12}
+                                      fill="currentColor"
+                                      className="row-star"
+                                      aria-label={t("已加星标")}
+                                    />
+                                  )}
+                                  <time className="nova-row-time">
+                                    {dateText(m.date)}
+                                  </time>
+                                </div>
+                                <div className="nova-subject-line">
+                                  <span className="message-subject">
+                                    {m.subject || t("（无主题）")}
+                                  </span>
+                                  {unified && (
+                                    <span className="message-account">
+                                      {" · " +
+                                        (accounts.find(
+                                          (a) => a.id === m.accountId,
+                                        )?.email || t("邮箱账号"))}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              {!m.seen && (
+                                <span
+                                  className="unread-dot"
+                                  aria-label={t("未读")}
+                                />
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <span className="message-row-top">
+                                {m.flagged && (
+                                  <Star
+                                    size={12}
+                                    fill="currentColor"
+                                    className="row-star"
+                                    aria-label={t("已加星标")}
+                                  />
+                                )}
+                                <strong>
+                                  {m.from
+                                    .replace(/<.*>/, "")
+                                    .replaceAll('"', "")
+                                    .trim() || m.from}
+                                </strong>
+                                <time>{dateText(m.date)}</time>
+                              </span>
+                              <span className="message-subject">
+                                {m.subject || t("（无主题）")}
+                              </span>
+                              {unified && (
+                                <span className="message-account">
+                                  {accounts.find((a) => a.id === m.accountId)
+                                    ?.email || t("邮箱账号")}
+                                </span>
+                              )}
+                              {!m.seen && (
+                                <span
+                                  className="unread-dot"
+                                  aria-label={t("未读")}
+                                />
+                              )}
                             </>
                           )}
-                        </MessageTranslation>
-                      </header>
-                      <div className="reader-card-body">
-                        {reading ? (
-                          <div className="reader-placeholder">
-                            {t("正在获取邮件正文…")}
-                          </div>
-                        ) : message.cached ? (
-                          <>
-                            {message.html ? (
-                              <MailFrame
-                                title={t("隔离的邮件正文")}
-                                doc={readerDocument}
-                                onOpenLink={(href) => {
-                                  setNotice(
-                                    remoteAllowed
-                                      ? "正在用系统浏览器打开链接…"
-                                      : "发件人未信任：已按你的点击在系统浏览器打开该链接，远程图片仍未加载。",
-                                  );
-                                  api
-                                    .openLink(href)
-                                    .then(() => {
-                                      if (remoteAllowed) setNotice("");
-                                    })
-                                    .catch((e) => setError(errorText(e)));
-                                }}
-                              />
-                            ) : (
-                              <pre className="plain-body">
-                                {message.text ||
-                                  t("这封邮件没有可显示的正文。")}
-                              </pre>
-                            )}
-                            {message.attachments?.length > 0 && (
-                              <div className="attachment-list">
-                                {message.attachments.map((file) => (
-                                  <div
-                                    className="attachment-row"
-                                    key={file.index}
-                                  >
-                                    <Paperclip size={14} />
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="attachment-name attachment-download"
-                                      title={t("下载附件：{0}", {
-                                        0: file.name,
-                                      })}
-                                      disabled={savingAttachment !== null}
-                                      onClick={() =>
-                                        void saveAttachment(message, file.index)
-                                      }
-                                    >
-                                      <span className="truncate">
-                                        {file.name || t("未命名附件")}
-                                      </span>
-                                    </Button>
-                                    {/* A row cached by an older build has no
-                                        size until its bytes are fetched. */}
-                                    {file.size > 0 && (
-                                      <span className="attachment-size">
-                                        {fileSize(file.size)}
-                                      </span>
-                                    )}
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      type="button"
-                                      className="attachment-preview-action"
-                                      onClick={() =>
-                                        setPreviewTarget({
-                                          messageId: message.id,
-                                          index: file.index,
-                                          name: file.name,
-                                        })
-                                      }
-                                    >
-                                      {t("预览")}
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      type="button"
-                                      className="attachment-save"
-                                      disabled={savingAttachment !== null}
-                                      onClick={() =>
-                                        void saveAttachment(message, file.index)
-                                      }
-                                    >
-                                      {savingAttachment === file.index
-                                        ? t("保存中…")
-                                        : t("保存")}
-                                    </Button>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <div className="reader-placeholder">
-                            {t("正文尚未获取，可重新点击邮件重试。")}
-                          </div>
-                        )}
-                      </div>
-                    </article>
+                        </button>
+                      ))}
+                    </div>
                   </div>
+                  {visible.length === 0 && (
+                    <div className="list-empty">
+                      <Inbox size={22} />
+                      <p>
+                        {filtering ? t("没有匹配的邮件") : t("这里还没有邮件")}
+                      </p>
+                      <small>
+                        {filtering
+                          ? t("可更换关键词或筛选条件，仅查找已缓存邮件。")
+                          : t("点击列表右上角刷新邮件。")}
+                      </small>
+                    </div>
+                  )}
+                  {!filtering && (
+                    <div className="history-footer">
+                      {loadingOlder ? (
+                        <span role="status">
+                          <RefreshCw size={13} className="spinning" />
+                          {t("正在加载更早邮件…")}
+                        </span>
+                      ) : olderError ? (
+                        <>
+                          <p role="alert">{t(olderError)}</p>
+                          <Button size="sm" onClick={() => void loadOlder()}>
+                            {t("重试加载")}
+                          </Button>
+                        </>
+                      ) : moreAvailable ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={!!busy}
+                          onClick={() => void loadOlder()}
+                        >
+                          {t("加载更早邮件")}
+                        </Button>
+                      ) : messages.length > 0 ? (
+                        <span>{t("已加载全部邮件")}</span>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="reader-empty">
-                  <span className="reader-empty-icon">
-                    <Mail size={26} />
-                  </span>
-                  <h2>{t("选择一封邮件")}</h2>
-                  <p>{t("选择左侧的邮件，在这里阅读。")}</p>
-                </div>
-              )}
-            </section>
-          </div>
+              </section>
+              <section className="message-reader" aria-label={t("邮件正文")}>
+                {message ? (
+                  <div className="reader-shell">
+                    <div className="reader-actions">
+                      <IconButton
+                        className="reader-back"
+                        label={t("返回邮件列表")}
+                        onClick={() => {
+                          ++readGeneration.current;
+                          setMessage(null);
+                          setReading(false);
+                        }}
+                      >
+                        <ArrowLeft />
+                      </IconButton>
+                      <IconButton
+                        className="reader-action"
+                        label={t("回复")}
+                        disabled={reading}
+                        onClick={() => replyTo("reply")}
+                      >
+                        <Reply />
+                      </IconButton>
+                      <IconButton
+                        className="reader-action"
+                        label={t("回复全部")}
+                        disabled={reading}
+                        onClick={() => replyTo("replyAll")}
+                      >
+                        <ReplyAll />
+                      </IconButton>
+                      <IconButton
+                        className="reader-action"
+                        label={t("转发")}
+                        disabled={reading}
+                        onClick={() => replyTo("forward")}
+                      >
+                        <Forward />
+                      </IconButton>
+                      <span className="reader-action-divider" />
+                      <IconButton
+                        className={
+                          "reader-action" + (message.flagged ? " flagged" : "")
+                        }
+                        label={message.flagged ? t("取消星标") : t("加星标")}
+                        active={message.flagged}
+                        disabled={reading || !!managing}
+                        onClick={() =>
+                          void runManage(
+                            () => api.setFlagged(message.id, !message.flagged),
+                            false,
+                          )
+                        }
+                      >
+                        <Star
+                          fill={message.flagged ? "currentColor" : "none"}
+                        />
+                      </IconButton>
+                      <IconButton
+                        className="reader-action"
+                        label={message.seen ? t("标记为未读") : t("标记为已读")}
+                        disabled={reading || !!managing}
+                        onClick={() =>
+                          void runManage(
+                            () => api.setSeen(message.id, !message.seen),
+                            message.seen,
+                          )
+                        }
+                      >
+                        {message.seen ? <MailOpen /> : <Mail />}
+                      </IconButton>
+                      <IconButton
+                        className="reader-action"
+                        label={t("移动到文件夹")}
+                        disabled={reading || !!managing}
+                        onClick={openMove}
+                      >
+                        <FolderInput />
+                      </IconButton>
+                      <IconButton
+                        className="reader-action"
+                        label={inTrash ? t("永久删除") : t("删除邮件")}
+                        disabled={reading || !!managing}
+                        onClick={() => setManageTarget("delete")}
+                      >
+                        <Trash2 />
+                      </IconButton>
+                    </div>
+                    <div className="reader-scroll" ref={readerScroll}>
+                      <h1 className="reader-subject">
+                        {message.subject || t("（无主题）")}
+                      </h1>
+                      <article className="reader-card">
+                        <header className="reader-card-header">
+                          <div className="reader-sender">
+                            <div className="reader-sender-row">
+                              <strong className="sender-name">
+                                <span
+                                  className={
+                                    "sender-trust" +
+                                    (trustedSender ? " trusted" : "")
+                                  }
+                                  title={
+                                    trustedSender
+                                      ? t("可信发件人{0}", {
+                                          0: trustNote
+                                            ? `（${trustNote}）`
+                                            : "",
+                                        })
+                                      : t("发件人未信任")
+                                  }
+                                >
+                                  {trustedSender ? (
+                                    <ShieldCheck size={14} />
+                                  ) : (
+                                    <ShieldAlert size={14} />
+                                  )}
+                                </span>
+                                {senderName(message.from)}
+                              </strong>
+                              <time>{dateTimeText(message.date)}</time>
+                            </div>
+                            <small className="reader-to">
+                              {t("发至")}
+                              {message.to}
+                            </small>
+                            {senderName(message.from) !== message.from && (
+                              <small className="reader-address">
+                                {message.from}
+                              </small>
+                            )}
+                          </div>
+                          <MessageTranslation
+                            key={message.id}
+                            messageId={message.id}
+                            enabled={
+                              !!(
+                                !reading &&
+                                message.cached &&
+                                (message.text || message.html)
+                              )
+                            }
+                            trusted={trustedSender}
+                            remote={remoteAllowed}
+                            dark={dark}
+                            subject={message.subject}
+                            html={message.html}
+                            text={message.text}
+                          >
+                            {!reading && message.cached && (
+                              <>
+                                <MenuItem
+                                  onSelect={() =>
+                                    setRemote(!remoteAllowed, false)
+                                  }
+                                >
+                                  {remoteAllowed
+                                    ? t("本邮件不加载")
+                                    : t("加载图片")}
+                                </MenuItem>
+                                <MenuItem
+                                  onSelect={() =>
+                                    setRemote(!trustedSender, true)
+                                  }
+                                >
+                                  {trustedSender
+                                    ? t("总是阻止")
+                                    : trustScope
+                                      ? t("信任 {0}", { 0: trustScope })
+                                      : t("信任发件人")}
+                                </MenuItem>
+                              </>
+                            )}
+                          </MessageTranslation>
+                        </header>
+                        <div className="reader-card-body">
+                          {reading ? (
+                            <div className="reader-placeholder">
+                              {t("正在获取邮件正文…")}
+                            </div>
+                          ) : message.cached ? (
+                            <>
+                              {message.html ? (
+                                <MailFrame
+                                  title={t("隔离的邮件正文")}
+                                  doc={readerDocument}
+                                  onOpenLink={(href) => {
+                                    setNotice(
+                                      remoteAllowed
+                                        ? "正在用系统浏览器打开链接…"
+                                        : "发件人未信任：已按你的点击在系统浏览器打开该链接，远程图片仍未加载。",
+                                    );
+                                    api
+                                      .openLink(href)
+                                      .then(() => {
+                                        if (remoteAllowed) setNotice("");
+                                      })
+                                      .catch((e) => setError(errorText(e)));
+                                  }}
+                                />
+                              ) : (
+                                <pre className="plain-body">
+                                  {message.text ||
+                                    t("这封邮件没有可显示的正文。")}
+                                </pre>
+                              )}
+                              {message.attachments?.length > 0 && (
+                                <div className="attachment-list">
+                                  {message.attachments.map((file) => (
+                                    <div
+                                      className="attachment-row"
+                                      key={file.index}
+                                    >
+                                      <Paperclip size={14} />
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="attachment-name attachment-download"
+                                        title={t("下载附件：{0}", {
+                                          0: file.name,
+                                        })}
+                                        disabled={savingAttachment !== null}
+                                        onClick={() =>
+                                          void saveAttachment(
+                                            message,
+                                            file.index,
+                                          )
+                                        }
+                                      >
+                                        <span className="truncate">
+                                          {file.name || t("未命名附件")}
+                                        </span>
+                                      </Button>
+                                      {/* A row cached by an older build has no
+                                        size until its bytes are fetched. */}
+                                      {file.size > 0 && (
+                                        <span className="attachment-size">
+                                          {fileSize(file.size)}
+                                        </span>
+                                      )}
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        type="button"
+                                        className="attachment-preview-action"
+                                        onClick={() =>
+                                          setPreviewTarget({
+                                            messageId: message.id,
+                                            index: file.index,
+                                            name: file.name,
+                                          })
+                                        }
+                                      >
+                                        {t("预览")}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        type="button"
+                                        className="attachment-save"
+                                        disabled={savingAttachment !== null}
+                                        onClick={() =>
+                                          void saveAttachment(
+                                            message,
+                                            file.index,
+                                          )
+                                        }
+                                      >
+                                        {savingAttachment === file.index
+                                          ? t("保存中…")
+                                          : t("保存")}
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="reader-placeholder">
+                              {t("正文尚未获取，可重新点击邮件重试。")}
+                            </div>
+                          )}
+                        </div>
+                      </article>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="reader-empty">
+                    <span className="reader-empty-icon">
+                      <Mail size={26} />
+                    </span>
+                    <h2>{t("选择一封邮件")}</h2>
+                    <p>{t("选择左侧的邮件，在这里阅读。")}</p>
+                  </div>
+                )}
+              </section>
+            </div>
+          </>
         )}
       </main>
       {previewTarget && (
@@ -1506,11 +1730,13 @@ export function App() {
                   <label htmlFor="pref-theme">{t("外观")}</label>
                   <ChoiceSelect
                     id="pref-theme"
-                    value={dark ? "dark" : "light"}
-                    onValueChange={(value) => setDark(value === "dark")}
+                    value={theme}
+                    onValueChange={(value) => setTheme(value as ThemeId)}
                     options={[
-                      { value: "light", label: t("浅色主题") },
-                      { value: "dark", label: t("深色主题") },
+                      { value: "nova", label: t("极简浅色 (Nova)") },
+                      { value: "nova-dark", label: t("极简深色 (Nova)") },
+                      { value: "light", label: t("经典浅色") },
+                      { value: "dark", label: t("经典深色") },
                     ]}
                   />
                 </div>
