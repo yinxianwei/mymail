@@ -10,10 +10,6 @@ import { Segmented } from "./components/ui/segmented";
 import { ChoiceSelect } from "./components/ui/choice-select";
 import { t, useLocale, getLocale, setLanguagePreference } from "./lib/i18n";
 import { LanguagePreferences } from "./components/language-preferences";
-import { NovaRail, type ThemeId } from "./components/nova-rail";
-import { NovaBanner } from "./components/nova-banner";
-import { NovaAiCard } from "./components/nova-ai-card";
-import { getAvatarBg, getAvatarInitial } from "./lib/avatar";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   Mail,
@@ -40,8 +36,6 @@ import {
   FolderInput,
   MailOpen,
   Check,
-  BadgeCheck,
-  SlidersHorizontal,
 } from "lucide-react";
 import {
   MailService as api,
@@ -156,6 +150,8 @@ const emptyDesktop: DesktopState = {
   lastError: "",
   revision: 0,
 };
+export type ThemeId = "card" | "card-dark" | "light" | "dark";
+
 export function App() {
   const locale = useLocale();
   useEffect(() => {
@@ -230,27 +226,27 @@ export function App() {
   const [theme, setTheme] = useState<ThemeId>(() => {
     const saved = localStorage.getItem("mail:theme");
     if (
-      saved === "nova" ||
-      saved === "nova-dark" ||
+      saved === "card" ||
+      saved === "card-dark" ||
       saved === "light" ||
       saved === "dark"
     ) {
       return saved;
     }
+    if (saved === "nova") return "card";
+    if (saved === "nova-dark") return "card-dark";
     if (saved === "true") return "dark";
     if (saved === "false") return "light";
-    return "nova";
+    return "card";
   });
-  const dark = theme === "dark" || theme === "nova-dark";
-  const isNova = theme === "nova" || theme === "nova-dark";
-  const [foldersOpen, setFoldersOpen] = useState(false);
+  const dark = theme === "dark" || theme === "card-dark";
 
   const setDark = (v: boolean | ((prev: boolean) => boolean)) => {
     setTheme((prev) => {
-      const currentDark = prev === "dark" || prev === "nova-dark";
+      const currentDark = prev === "dark" || prev === "card-dark";
       const nextDark = typeof v === "function" ? v(currentDark) : v;
-      if (prev.startsWith("nova")) {
-        return nextDark ? "nova-dark" : "nova";
+      if (prev.startsWith("card")) {
+        return nextDark ? "card-dark" : "card";
       }
       return nextDark ? "dark" : "light";
     });
@@ -930,38 +926,8 @@ export function App() {
     messages,
   ]);
   return (
-    <div className={"mail-app " + (isNova ? "theme-nova" : "")}>
-      {isNova && (
-        <NovaRail
-          unified={unified}
-          folder={folder}
-          filter={messageFilter}
-          unreadCount={account ? desktop.accountUnread[account.id] : 0}
-          foldersOpen={foldersOpen}
-          theme={theme}
-          onSelectInbox={() => {
-            if (unified) chooseAll();
-            else void chooseFolder("INBOX");
-            setMessageFilter("all");
-          }}
-          onSelectStarred={() => {
-            setMessageFilter("starred");
-          }}
-          onSelectUnified={() => {
-            chooseAll();
-          }}
-          onToggleFolders={() => setFoldersOpen((v) => !v)}
-          onOpenDrafts={() => setDraftManager(true)}
-          onOpenSettings={() => setSettings(true)}
-          onThemeChange={setTheme}
-        />
-      )}
-      <aside
-        className={
-          "mail-sidebar " +
-          (isNova ? (foldersOpen ? "nova-sidebar-open" : "nova-sidebar-collapsed") : "")
-        }
-      >
+    <div className="mail-app">
+      <aside className="mail-sidebar">
         <Button
           variant="primary"
           className="compose-button"
@@ -1057,123 +1023,38 @@ export function App() {
             </div>
           </div>
         ) : (
-          <>
-            {isNova && (
-              <div className="nova-topbar">
-                <div className="nova-topbar-title">
-                  <span>
-                    {unified
-                      ? t("所有收件箱")
-                      : folderTitle(
-                          folders.find((f) => f.name === folder) ?? {
-                            name: folder,
-                            delimiter: "",
-                            role: "",
-                            selectable: true,
-                          },
-                        )}
-                  </span>
-                  <span className="nova-topbar-dot">•</span>
-                  <span className="nova-topbar-count">
-                    {visible.length} {t("封邮件")}
-                  </span>
-                </div>
-                <div className="nova-actions-row">
-                  <button
-                    type="button"
-                    className="nova-pill-primary"
-                    disabled={!senderAccount || senderAccount.demo}
-                    onClick={() => {
-                      setComposeSeed(null);
-                      setComposeFresh(true);
-                      setCompose(true);
-                    }}
-                  >
-                    <Plus size={14} />
-                    <span>{t("写邮件")}</span>
-                  </button>
-                  <span className="nova-pill-divider" />
-                  <button
-                    type="button"
-                    className="nova-pill-filter"
-                    onClick={() => {
-                      if (unified) chooseAll();
-                      else void chooseFolder("INBOX");
-                    }}
-                  >
-                    <Inbox size={14} />
-                    <span>
-                      {unified ? t("所有收件箱") : t("收件箱")} {visible.length}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className="nova-pill-ghost"
-                    onClick={() => {
-                      const sent = folders.find(
-                        (f) => f.role === "sent" || /sent|已发送/i.test(f.name),
-                      );
-                      if (sent) void chooseFolder(sent.name);
-                    }}
-                  >
-                    <Send size={14} />
-                    <span>{t("已发送")}</span>
-                  </button>
-                </div>
-              </div>
-            )}
-            <div className={"mail-workspace " + (message ? "has-message" : "")}>
-              <div className="nova-list-column">
-                {isNova && (
-                  <NovaAiCard
-                    onAction={() => setNotice(t("智能分类与摘要已就绪"))}
-                  />
-                )}
-                <section className="message-list" aria-label={t("邮件列表")}>
-                  {isNova && <NovaBanner />}
-                  <div className="list-toolbar">
-                  <strong>
-                    {unified
-                      ? t("所有收件箱")
-                      : folderTitle(
-                          folders.find((f) => f.name === folder) ?? {
-                            name: folder,
-                            delimiter: "",
-                            role: "",
-                            selectable: true,
-                          },
-                        )}
-                  </strong>
-                  <span>{visible.length}</span>
-                  {isNova && (
-                    <IconButton
-                      size="sm"
-                      label={t("邮件筛选")}
-                      onClick={() => {
-                        setMessageFilter((f) =>
-                          f === "all" ? "unread" : "all",
-                        );
-                      }}
-                    >
-                      <SlidersHorizontal size={14} />
-                    </IconButton>
-                  )}
-                  <IconButton
-                    label={
-                      busy || (unified && desktop.checking)
-                        ? t("正在同步")
-                        : t("刷新邮件")
+          <div className={"mail-workspace " + (message ? "has-message" : "")}>
+            <section className="message-list" aria-label={t("邮件列表")}>
+              <div className="list-toolbar">
+                <strong>
+                  {unified
+                    ? t("所有收件箱")
+                    : folderTitle(
+                        folders.find((f) => f.name === folder) ?? {
+                          name: folder,
+                          delimiter: "",
+                          role: "",
+                          selectable: true,
+                        },
+                      )}
+                </strong>
+                <span>{visible.length}</span>
+                <IconButton
+                  label={
+                    busy || (unified && desktop.checking)
+                      ? t("正在同步")
+                      : t("刷新邮件")
+                  }
+                  disabled={!!busy || (unified && desktop.checking)}
+                  onClick={() => void sync()}
+                >
+                  <RefreshCw
+                    className={
+                      busy || (unified && desktop.checking) ? "spinning" : ""
                     }
-                    disabled={!!busy || (unified && desktop.checking)}
-                    onClick={() => void sync()}
-                  >
-                    <RefreshCw
-                      className={
-                        busy || (unified && desktop.checking) ? "spinning" : ""
-                      }
-                    />
-                  </IconButton>
-                </div>
+                  />
+                </IconButton>
+              </div>
                 <div className="list-search">
                   <Input
                     aria-label={t("搜索已缓存邮件")}
@@ -1266,98 +1147,34 @@ export function App() {
                           }
                           onClick={() => void read(m)}
                         >
-                          {isNova ? (
-                            <>
-                              <div
-                                className="nova-row-avatar"
-                                style={{ backgroundColor: getAvatarBg(m.from) }}
-                                aria-hidden="true"
-                              >
-                                {getAvatarInitial(m.from)}
-                              </div>
-                              <div className="nova-row-body">
-                                <div className="nova-sender-line">
-                                  <strong className="nova-sender-name">
-                                    {m.from
-                                      .replace(/<.*>/, "")
-                                      .replaceAll('"', "")
-                                      .trim() || m.from}
-                                  </strong>
-                                  <BadgeCheck
-                                    size={14}
-                                    className="nova-verified-badge"
-                                    fill="#0ea5e9"
-                                    stroke="#ffffff"
-                                    aria-label={t("认证发件人")}
-                                  />
-                                  {m.flagged && (
-                                    <Star
-                                      size={12}
-                                      fill="currentColor"
-                                      className="row-star"
-                                      aria-label={t("已加星标")}
-                                    />
-                                  )}
-                                  <time className="nova-row-time">
-                                    {dateText(m.date)}
-                                  </time>
-                                </div>
-                                <div className="nova-subject-line">
-                                  <span className="message-subject">
-                                    {m.subject || t("（无主题）")}
-                                  </span>
-                                  {unified && (
-                                    <span className="message-account">
-                                      {" · " +
-                                        (accounts.find(
-                                          (a) => a.id === m.accountId,
-                                        )?.email || t("邮箱账号"))}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              {!m.seen && (
-                                <span
-                                  className="unread-dot"
-                                  aria-label={t("未读")}
-                                />
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              <span className="message-row-top">
-                                {m.flagged && (
-                                  <Star
-                                    size={12}
-                                    fill="currentColor"
-                                    className="row-star"
-                                    aria-label={t("已加星标")}
-                                  />
-                                )}
-                                <strong>
-                                  {m.from
-                                    .replace(/<.*>/, "")
-                                    .replaceAll('"', "")
-                                    .trim() || m.from}
-                                </strong>
-                                <time>{dateText(m.date)}</time>
-                              </span>
-                              <span className="message-subject">
-                                {m.subject || t("（无主题）")}
-                              </span>
-                              {unified && (
-                                <span className="message-account">
-                                  {accounts.find((a) => a.id === m.accountId)
-                                    ?.email || t("邮箱账号")}
-                                </span>
-                              )}
-                              {!m.seen && (
-                                <span
-                                  className="unread-dot"
-                                  aria-label={t("未读")}
-                                />
-                              )}
-                            </>
+                          <span className="message-row-top">
+                            {m.flagged && (
+                              <Star
+                                size={12}
+                                fill="currentColor"
+                                className="row-star"
+                                aria-label={t("已加星标")}
+                              />
+                            )}
+                            <strong>
+                              {m.from
+                                .replace(/<.*>/, "")
+                                .replaceAll('"', "")
+                                .trim() || m.from}
+                            </strong>
+                            <time>{dateText(m.date)}</time>
+                          </span>
+                          <span className="message-subject">
+                            {m.subject || t("（无主题）")}
+                          </span>
+                          {unified && (
+                            <span className="message-account">
+                              {accounts.find((a) => a.id === m.accountId)
+                                ?.email || t("邮箱账号")}
+                            </span>
+                          )}
+                          {!m.seen && (
+                            <span className="unread-dot" aria-label={t("未读")} />
                           )}
                         </button>
                       ))}
@@ -1406,8 +1223,7 @@ export function App() {
                   )}
                 </div>
               </section>
-            </div>
-            <section className="message-reader" aria-label={t("邮件正文")}>
+              <section className="message-reader" aria-label={t("邮件正文")}>
                 {message ? (
                   <div className="reader-shell">
                     <div className="reader-actions">
@@ -1704,7 +1520,6 @@ export function App() {
                 )}
               </section>
             </div>
-          </>
         )}
       </main>
       {previewTarget && (
@@ -1735,8 +1550,8 @@ export function App() {
                     value={theme}
                     onValueChange={(value) => setTheme(value as ThemeId)}
                     options={[
-                      { value: "nova", label: t("极简浅色 (Nova)") },
-                      { value: "nova-dark", label: t("极简深色 (Nova)") },
+                      { value: "card", label: t("现代卡片") },
+                      { value: "card-dark", label: t("现代卡片 (深色)") },
                       { value: "light", label: t("经典浅色") },
                       { value: "dark", label: t("经典深色") },
                     ]}

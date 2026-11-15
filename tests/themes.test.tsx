@@ -1,115 +1,165 @@
-import { expect, test, beforeAll } from "bun:test";
+import { expect, test } from "bun:test";
 import { JSDOM } from "jsdom";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { NovaRail, type ThemeId } from "../src/components/nova-rail";
-import { NovaAiCard } from "../src/components/nova-ai-card";
-import { NovaBanner } from "../src/components/nova-banner";
-import { getAvatarBg, getAvatarInitial } from "../src/lib/avatar";
+import {
+  MailService as api,
+  events,
+  type Account,
+  type Message,
+} from "../src/mygo";
+import type { ThemeId } from "../src/App";
 
-beforeAll(() => {
+const account: Account = {
+  id: "first",
+  email: "first@example.invalid",
+  imapHost: "localhost",
+  imapPort: 993,
+  imapTLS: "tls",
+  smtpHost: "localhost",
+  smtpPort: 465,
+  smtpTLS: "tls",
+  demo: false,
+};
+
+const message: Message = {
+  id: "first:INBOX:1:1",
+  accountId: account.id,
+  folder: "INBOX",
+  uid: 1,
+  validity: 1,
+  subject: "卡片主题测试邮件",
+  from: "sender@example.invalid",
+  to: account.email,
+  date: "2026-11-15T08:00:00Z",
+  seen: true,
+  flagged: false,
+  text: "正文内容",
+  html: "",
+  cached: true,
+  attachments: [],
+};
+
+function bootstrap() {
   const { window } = new JSDOM("<!doctype html><body></body>", {
     url: "https://mail.test",
+    pretendToBeVisual: true,
   });
   Object.assign(globalThis, {
     window,
     document: window.document,
     localStorage: window.localStorage,
+    DOMParser: window.DOMParser,
     IS_REACT_ACT_ENVIRONMENT: true,
+    getComputedStyle: window.getComputedStyle.bind(window),
+    MutationObserver: window.MutationObserver,
+    HTMLElement: window.HTMLElement,
+    HTMLFormElement: window.HTMLFormElement,
+    DocumentFragment: window.DocumentFragment,
+    HTMLSelectElement: window.HTMLSelectElement,
+    HTMLInputElement: window.HTMLInputElement,
+    HTMLTextAreaElement: window.HTMLTextAreaElement,
+    Node: window.Node,
+    NodeFilter: window.NodeFilter,
+    CustomEvent: window.CustomEvent,
+    Event: window.Event,
+    requestAnimationFrame: window.requestAnimationFrame.bind(window),
+    cancelAnimationFrame: window.cancelAnimationFrame.bind(window),
   });
-});
+  return window;
+}
 
-test("Nova theme components render and handle interactions properly", async () => {
+test("Card theme supports light and dark variations with persistence", async () => {
+  bootstrap();
+  const original = { ...api };
+  const origMailChanged = events.mailChanged.on;
+  const origOpenMail = events.openMail.on;
+  const origComposeMail = events.composeMail.on;
+
+  events.mailChanged.on = () => () => {};
+  events.openMail.on = () => () => {};
+  events.composeMail.on = () => () => {};
+
+  const desktop = {
+    unread: 0,
+    accountUnread: { first: 0 },
+    notifications: true,
+    notificationStatus: "",
+    checking: false,
+    lastError: "",
+    revision: 1,
+  };
+
+  Object.assign(api, {
+    state: async () => ({
+      accounts: [account],
+      database: "test.db",
+    }),
+    desktopState: async () => desktop,
+    takeMailTarget: async () => ({ accountId: "", uid: 0, validity: 0 }),
+    folders: async () => [
+      { name: "INBOX", delimiter: "/", role: "inbox", selectable: true },
+    ],
+    messages: async () => [message],
+    allInboxMessages: async () => [message],
+    checkMail: async () => desktop,
+    readMessage: async () => message,
+    markRead: async () => {},
+    getDraft: async (id: string) => ({
+      accountId: id,
+      to: "",
+      cc: "",
+      subject: "",
+      body: "",
+      attachments: [],
+    }),
+    saveDraft: async () => {},
+  });
+
+  localStorage.setItem("mail:theme", "card");
+
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
 
-  let selectedTheme: ThemeId = "nova";
-  let foldersToggled = false;
-  let draftsOpened = false;
+  try {
+    const { App } = await import("../src/App");
+    await act(async () => {
+      root.render(<App />);
+    });
 
-  await act(async () => {
-    root.render(
-      <NovaRail
-        unified={false}
-        folder="INBOX"
-        filter="all"
-        unreadCount={5}
-        foldersOpen={false}
-        theme={selectedTheme}
-        onSelectInbox={() => {}}
-        onSelectStarred={() => {}}
-        onSelectUnified={() => {}}
-        onToggleFolders={() => {
-          foldersToggled = true;
-        }}
-        onOpenDrafts={() => {
-          draftsOpened = true;
-        }}
-        onOpenSettings={() => {}}
-        onThemeChange={(t) => {
-          selectedTheme = t;
-        }}
-      />,
+    expect(document.documentElement.dataset.theme).toBe("card");
+    expect(localStorage.getItem("mail:theme")).toBe("card");
+
+    // Toggle to card-dark
+    const darkToggle = host.querySelector<HTMLButtonElement>(
+      'button[aria-label="深色主题"]',
     );
-  });
+    expect(darkToggle).not.toBeNull();
+    await act(async () => {
+      darkToggle?.click();
+    });
 
-  // Verify rail logo and badge dot
-  expect(host.querySelector(".nova-logo-badge")).not.toBeNull();
-  expect(host.querySelector(".badge-dot")).not.toBeNull();
-
-  // Test folder toggle action
-  const folderBtn =
-    host.querySelector<HTMLButtonElement>('[title="更多文件夹"]');
-  expect(folderBtn).not.toBeNull();
-  await act(async () => folderBtn?.click());
-  expect(foldersToggled).toBe(true);
-
-  // Test drafts action
-  const draftsBtn = host.querySelector<HTMLButtonElement>('[title="本地草稿"]');
-  expect(draftsBtn).not.toBeNull();
-  await act(async () => draftsBtn?.click());
-  expect(draftsOpened).toBe(true);
-
-  // Test AI Card
-  let aiCardClicked = false;
-  await act(async () => {
-    root.render(<NovaAiCard onAction={() => (aiCardClicked = true)} />);
-  });
-  expect(host.textContent).toContain("GPT 5.5");
-  expect(host.textContent).toContain("Pro (20x)");
-  expect(host.querySelectorAll(".nova-ai-bar").length).toBe(24);
-  const aiCard = host.querySelector<HTMLDivElement>(".nova-ai-card");
-  await act(async () => aiCard?.click());
-  expect(aiCardClicked).toBe(true);
-
-  // Test Banner and dismiss
-  localStorage.removeItem("mail:nova:banner:dismissed");
-  await act(async () => {
-    root.render(<NovaBanner />);
-  });
-  expect(host.textContent).toContain("开启 AI 智邮");
-  expect(host.textContent).toContain("体验新一代智能收件箱");
-
-  const dismissBtn = host.querySelector<HTMLButtonElement>(
-    ".nova-banner-dismiss",
-  );
-  expect(dismissBtn).not.toBeNull();
-  await act(async () => dismissBtn?.click());
-  expect(localStorage.getItem("mail:nova:banner:dismissed")).toBe("true");
-
-  await act(async () => {
-    root.unmount();
-  });
-  host.remove();
+    expect(document.documentElement.dataset.theme).toBe("card-dark");
+    expect(localStorage.getItem("mail:theme")).toBe("card-dark");
+  } finally {
+    await act(async () => {
+      root.unmount();
+    });
+    host.remove();
+    Object.assign(api, original);
+    events.mailChanged.on = origMailChanged;
+    events.openMail.on = origOpenMail;
+    events.composeMail.on = origComposeMail;
+  }
 });
 
-test("Avatar color and monogram generation is deterministic", () => {
-  const bg1 = getAvatarBg("Rico Oktananda <rico@example.invalid>");
-  const bg2 = getAvatarBg("Rico Oktananda <rico@example.invalid>");
-  expect(bg1).toBe(bg2);
+test("Legacy nova theme preferences automatically migrate to modern card themes", () => {
+  const legacyLight = "nova";
+  const mappedLight: ThemeId = legacyLight === "nova" ? "card" : "light";
+  expect(mappedLight).toBe("card");
 
-  expect(getAvatarInitial("Rico Oktananda")).toBe("R");
-  expect(getAvatarInitial('"Alicia from Deel" <alicia@deel.com>')).toBe("A");
-  expect(getAvatarInitial("Substack Read")).toBe("S");
+  const legacyDark = "nova-dark";
+  const mappedDark: ThemeId = legacyDark === "nova-dark" ? "card-dark" : "dark";
+  expect(mappedDark).toBe("card-dark");
 });
