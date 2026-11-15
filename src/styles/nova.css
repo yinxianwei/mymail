@@ -122,15 +122,21 @@
 :root[data-theme^="nova"] .mail-topbar {
   height: 52px;
   min-height: 52px;
-  padding: 0 20px;
+  padding: 0 16px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   border-bottom: none;
   background: transparent;
   --app-region: drag;
   -webkit-app-region: drag;
   flex-shrink: 0;
+}
+
+:root[data-theme^="card"] .mail-topbar .breadcrumb,
+:root[data-theme^="nova"] .mail-topbar .breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 :root[data-theme^="card"] .mail-topbar .breadcrumb strong,
@@ -144,7 +150,7 @@
 :root[data-theme^="card"] .mail-topbar .topbar-dot,
 :root[data-theme^="nova"] .mail-topbar .topbar-dot {
   color: var(--text-4);
-  margin: 0 6px;
+  margin: 0 2px;
   font-size: 14px;
 }
 
@@ -153,13 +159,15 @@
   font-size: 13px;
   color: var(--text-3);
   font-weight: 450;
+  margin-right: 4px;
 }
 
-:root[data-theme^="card"] .mail-topbar .topbar-status,
-:root[data-theme^="nova"] .mail-topbar .topbar-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+:root[data-theme^="card"] .topbar-refresh-btn,
+:root[data-theme^="nova"] .topbar-refresh-btn {
+  color: var(--text-3);
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
 }
 
 /* 4. 工作区：优雅双悬浮卡片 */
@@ -363,11 +371,17 @@
 }
 
 /* 6. 阅读器去多层嵌套，平滑展示 */
+:root[data-theme^="card"] .reader-scroll,
+:root[data-theme^="nova"] .reader-scroll {
+  padding: 0;
+  gap: 0;
+}
+
 :root[data-theme^="card"] .reader-actions,
 :root[data-theme^="nova"] .reader-actions {
   height: 52px;
   min-height: 52px;
-  padding: 0 18px;
+  padding: 0 20px;
   border-bottom: 1px solid var(--divider);
   display: flex;
   align-items: center;
@@ -377,11 +391,12 @@
 
 :root[data-theme^="card"] .reader-subject,
 :root[data-theme^="nova"] .reader-subject {
-  padding: 20px 24px 12px;
+  padding: 24px 28px 16px;
   font-size: 20px;
   font-weight: 600;
   line-height: 1.35;
   color: var(--text);
+  margin: 0;
 }
 
 :root[data-theme^="card"] .reader-card,
@@ -391,46 +406,89 @@
   border: none;
   border-radius: 0;
   box-shadow: none;
+  min-height: auto;
 }
 
 :root[data-theme^="card"] .reader-card-header,
 :root[data-theme^="nova"] .reader-card-header {
-  padding: 0 24px 16px;
+  padding: 0 28px 18px;
   border-bottom: 1px solid var(--divider);
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 16px;
 }
 
 :root[data-theme^="card"] .reader-sender,
 :root[data-theme^="nova"] .reader-sender {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  gap: 14px !important;
+  flex: 1;
+  min-width: 0;
+  text-align: left !important;
 }
 
 :root[data-theme^="card"] .reader-sender-avatar,
 :root[data-theme^="nova"] .reader-sender-avatar {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 16px;
   flex-shrink: 0;
   user-select: none;
+  margin-top: 2px;
 }
 
 :root[data-theme^="card"] .reader-sender-info,
 :root[data-theme^="nova"] .reader-sender-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
   flex: 1;
+  text-align: left;
+}
+
+:root[data-theme^="card"] .reader-sender-row,
+:root[data-theme^="nova"] .reader-sender-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+:root[data-theme^="card"] .reader-sender-row strong,
+:root[data-theme^="nova"] .reader-sender-row strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+:root[data-theme^="card"] .reader-sender-row time,
+:root[data-theme^="nova"] .reader-sender-row time {
+  font-size: 12.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+:root[data-theme^="card"] .reader-to,
+:root[data-theme^="card"] .reader-address,
+:root[data-theme^="nova"] .reader-to,
+:root[data-theme^="nova"] .reader-address {
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.4;
 }
 
 :root[data-theme^="card"] .reader-card-body,
 :root[data-theme^="nova"] .reader-card-body {
-  padding: 24px;
+  padding: 24px 28px;
 }
 
 /* 7. 弹窗与选择器大圆角和阴影 */

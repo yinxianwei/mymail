@@ -1008,9 +1008,9 @@ export function App() {
               <span className="topbar-count">
                 {visible.length} {t("封邮件")}
               </span>
-            </div>
-            <div className="topbar-status">
               <IconButton
+                size="xs"
+                className="topbar-refresh-btn"
                 label={
                   busy || (unified && desktop.checking)
                     ? t("正在同步")
@@ -1020,6 +1020,7 @@ export function App() {
                 onClick={() => void sync()}
               >
                 <RefreshCw
+                  size={13}
                   className={
                     busy || (unified && desktop.checking) ? "spinning" : ""
                   }
