@@ -65,11 +65,12 @@
 :root[data-theme^="nova"] .folder-tree-row,
 :root[data-theme^="card"] .folder-item,
 :root[data-theme^="nova"] .folder-item {
-  border-radius: 10px;
-  min-height: 34px;
+  border-radius: 8px;
+  min-height: 32px;
   padding: 0 8px;
   margin: 1px 0;
-  transition: background 120ms ease, color 120ms ease;
+  color: var(--text-2);
+  transition: background 100ms ease, color 100ms ease;
 }
 
 :root[data-theme^="card"] .folder-tree-row:hover,
@@ -77,66 +78,34 @@
 :root[data-theme^="card"] .folder-item:hover,
 :root[data-theme^="nova"] .folder-item:hover {
   background: var(--surface-2);
+  color: var(--text);
 }
 
 :root[data-theme^="card"] .folder-tree-row.selected,
 :root[data-theme^="nova"] .folder-tree-row.selected,
 :root[data-theme^="card"] .folder-item.selected,
 :root[data-theme^="nova"] .folder-item.selected {
-  background: #e2e5eb;
-  color: #0f172a;
-  font-weight: 650;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
-  position: relative;
+  background: #edf0f5;
+  color: var(--text);
+  font-weight: 550;
 }
 
 :root[data-theme="card-dark"] .folder-tree-row.selected,
 :root[data-theme="card-dark"] .folder-item.selected,
 :root[data-theme="nova-dark"] .folder-tree-row.selected,
 :root[data-theme="nova-dark"] .folder-item.selected {
-  background: #2a2d35;
+  background: #23262c;
   color: #f8fafc;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-:root[data-theme^="card"] .folder-tree-row.selected::before,
-:root[data-theme^="nova"] .folder-tree-row.selected::before,
-:root[data-theme^="card"] .folder-item.selected::before,
-:root[data-theme^="nova"] .folder-item.selected::before {
-  content: "";
-  position: absolute;
-  left: 2px;
-  top: 7px;
-  bottom: 7px;
-  width: 3.5px;
-  border-radius: 9999px;
-  background: var(--accent);
-}
-
-:root[data-theme^="card"] .folder-tree-row.selected .folder-select svg,
-:root[data-theme^="nova"] .folder-tree-row.selected .folder-select svg,
-:root[data-theme^="card"] .folder-item.selected svg,
-:root[data-theme^="nova"] .folder-item.selected svg {
-  color: var(--accent);
-  stroke-width: 2.2px;
-}
-
-:root[data-theme^="card"] .folder-tree-row.selected .folder-unread,
-:root[data-theme^="nova"] .folder-tree-row.selected .folder-unread,
-:root[data-theme^="card"] .folder-item.selected small,
-:root[data-theme^="nova"] .folder-item.selected small {
-  background: var(--accent);
-  color: var(--on-accent);
 }
 
 :root[data-theme^="card"] .folder-unread,
 :root[data-theme^="nova"] .folder-unread {
   background: var(--surface-2);
-  color: var(--text-2);
+  color: var(--text-3);
   border-radius: 9999px;
   padding: 1px 7px;
   font-size: 11px;
-  font-weight: 550;
+  font-weight: 500;
 }
 
 :root[data-theme^="card"] .sidebar-bottom,
