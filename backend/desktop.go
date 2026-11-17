@@ -17,47 +17,31 @@ import (
 	"github.com/egoist/mygo"
 )
 
-// trayImage draws the app monogram — the same "M" stroke as
-// design/logo/logo.svg, whose deep V doubles as an envelope flap — as a 16 pt
-// template image. macOS tints template icons from their alpha only, so the ink
-// is solid black on transparency and the rounded blue tile is deliberately
-// left out: filled, it would be an opaque black square in the menu bar.
+// trayImage draws a rounded outline tile with a fine M monogram. The
+// transparent template is tinted by macOS for light and dark menu bars.
 func trayImage(count int) []byte {
 	const size = 32
 	im := image.NewNRGBA(image.Rect(0, 0, size, size))
-
-	// logo.svg (1024 canvas): M302,702 V322 L512,632 L722,322 V702, stroked
-	// 94 with round caps/joins. Its ink box is 255..769 x 275..749. Centre
-	// that box in the 32 px bitmap, keeping the glyph's aspect ratio and
-	// stroke weight. Platforms without a menu-bar title put the unread badge
-	// in the lower right, so the mark shifts up and left a little there.
-	const inkW, inkH = 514.0, 474.0
-	scale := 24.0 / inkW
-	offX := (size - inkW*scale) / 2
-	offY := (size - inkH*scale) / 2
 	badge := count > 0 && runtime.GOOS != "darwin"
+	// Coordinates use the 2x menu-bar canvas. Both strokes are 1.1 pt.
+	scale, offset := 1.0, 0.0
 	if badge {
-		scale = 20.0 / inkW
-		offX, offY = 2, 2
+		scale, offset = 0.8, -0.4
 	}
-	path := [...][2]float64{{302, 702}, {302, 322}, {512, 632}, {722, 322}, {722, 702}}
-	points := make([][2]float64, len(path))
-	for i, p := range path {
-		points[i] = [2]float64{offX + (p[0]-255)*scale, offY + (p[1]-275)*scale}
-	}
-	radius := 94 * scale / 2
+	points := [...][2]float64{{10, 22}, {10, 10}, {16, 18}, {22, 10}, {22, 22}}
 	for y := 0; y < size; y++ {
 		for x := 0; x < size; x++ {
-			px, py := float64(x)+0.5, float64(y)+0.5
-			nearest := math.MaxFloat64
+			px := (float64(x) + 0.5 - offset) / scale
+			py := (float64(y) + 0.5 - offset) / scale
+			// Signed distance to a rounded rectangle: bounds 3..29,
+			// corner radius 6; only its outline receives ink.
+			qx, qy := math.Abs(px-16)-7, math.Abs(py-16)-7
+			d := math.Hypot(math.Max(qx, 0), math.Max(qy, 0)) + math.Min(math.Max(qx, qy), 0) - 6
+			nearest := math.Abs(d)
 			for i := 1; i < len(points); i++ {
-				if d := strokeDistance(px, py, points[i-1], points[i]); d < nearest {
-					nearest = d
-				}
+				nearest = math.Min(nearest, strokeDistance(px, py, points[i-1], points[i]))
 			}
-			// One pixel of feathering keeps the small glyph smooth; the
-			// template tint reads only this alpha channel.
-			cover := math.Min(1, math.Max(0, radius+0.5-nearest))
+			cover := math.Min(1, math.Max(0, (1.1-nearest)*scale+0.5))
 			if cover > 0 {
 				im.SetNRGBA(x, y, color.NRGBA{A: uint8(cover*255 + 0.5)})
 			}

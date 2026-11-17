@@ -159,9 +159,7 @@ func TestNotificationTargetAndTrayImage(t *testing.T) {
 	}
 }
 
-// The menu bar icon is the app's monogram, not the old outlined envelope: two
-// uprights and a deep V, with the same 514:474 ink-box proportion as
-// design/logo/logo.svg.
+// The menu-bar mark has a rounded frame and an M, with transparent counters.
 func TestTrayImageUsesAppMonogram(t *testing.T) {
 	decoded, err := png.Decode(bytes.NewReader(trayImage(0)))
 	if err != nil {
@@ -171,30 +169,15 @@ func TestTrayImageUsesAppMonogram(t *testing.T) {
 		_, _, _, a := decoded.At(x, y).RGBA()
 		return a
 	}
-	for _, p := range [][2]int{{6, 16}, {26, 16}, {16, 22}, {6, 8}, {26, 8}} {
-		if alpha(p[0], p[1]) < 200*257 {
-			t.Fatalf("missing monogram ink at %v", p)
+	for _, p := range [][2]int{{3, 16}, {28, 16}, {16, 3}, {16, 28}, {10, 16}, {21, 16}, {16, 17}} {
+		if alpha(p[0], p[1]) < 150*257 {
+			t.Fatalf("missing frame or monogram ink at %v", p)
 		}
 	}
-	// The old envelope's flat top edge crossed (16, 8); the M's counter and
-	// the canvas margins must stay transparent for the template tint.
-	for _, p := range [][2]int{{0, 0}, {31, 31}, {1, 16}, {31, 16}, {16, 8}, {16, 10}, {16, 14}} {
+	for _, p := range [][2]int{{0, 0}, {3, 3}, {31, 31}, {6, 16}, {16, 10}, {16, 23}, {25, 16}} {
 		if alpha(p[0], p[1]) > 20*257 {
 			t.Fatalf("unexpected ink at %v", p)
 		}
-	}
-	minX, minY, maxX, maxY := 32, 32, -1, -1
-	for y := 0; y < 32; y++ {
-		for x := 0; x < 32; x++ {
-			if alpha(x, y) > 128*257 {
-				minX, minY = min(minX, x), min(minY, y)
-				maxX, maxY = max(maxX, x), max(maxY, y)
-			}
-		}
-	}
-	w, h := maxX-minX+1, maxY-minY+1
-	if h < 20 || w < 20 || float64(w)/float64(h) < 1 || float64(w)/float64(h) > 1.25 {
-		t.Fatalf("monogram ink box is %dx%d, expected the logo's ~1.08 ratio", w, h)
 	}
 }
 
